@@ -2,29 +2,32 @@
 #define MICROS_EN_SEG 1000000.0
 #define MICROS_50HZ 20000
 
+unsigned long t_inicio_loop; // Cuando inicia cada ciclo de tareas
+unsigned long t_loop_anterior; // Última ejecución de tareas
+unsigned long t_actual;
+
 void check_loop_freq(unsigned long t_inicio_loop, unsigned long t_fin_loop);
 float angulo_pote(int pote);
 
+
 void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(115200); // Suficientemente alto para que carguen los print
+  t_inicio_loop = micros();
+  t_loop_anterior = t_inicio_loop;
 }
 
 void loop() {
-  unsigned long t_inicio_loop = micros();
+  t_actual = micros();
+  if(t_actual - t_inicio_loop >= MICROS_50HZ){
+    check_loop_freq(t_loop_anterior,t_actual); // Verifico 20ms (50Hz) desde última ejecución
+    t_loop_anterior = t_actual;
+    t_inicio_loop += MICROS_50HZ;
 
-  unsigned long t_previo = micros();
-  int lectura_pote = analogRead(PIN_POTE);
-  unsigned long t_actual = micros();
-
-  unsigned long t_transcurrido = t_actual - t_previo;
-
-  unsigned long t_idle = MICROS_50HZ - t_transcurrido; 
-  delayMicroseconds(t_idle);
-  
-  unsigned long t_fin_loop = micros();
-  check_loop_freq(t_inicio_loop,t_fin_loop);  
-
+    // Ahora sí ejecuto tareas
+    int lectura_pote = analogRead(PIN_POTE);
+    Serial.print("Ángulo: ");
+    Serial.println(angulo_pote(lectura_pote));   
+  }
 }
 
 void check_loop_freq(unsigned long t_inicio_loop, unsigned long t_fin_loop){
@@ -36,9 +39,6 @@ void check_loop_freq(unsigned long t_inicio_loop, unsigned long t_fin_loop){
   Serial.println(f);
 }
 
-float angulo_pote(int pote){
-  float angulo = pote * (270.0/1023.0);
-  Serial.println("Ángulo");
-  Serial.println(angulo);
-  return angulo;
+float angulo_pote(int lectura_pote){
+  return lectura_pote * (270.0/1023.0);
   }
