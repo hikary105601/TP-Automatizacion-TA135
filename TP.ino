@@ -1,19 +1,31 @@
+#include <NewPing.h>
+#include <Servo.h>
+
 #define PIN_POTE A0
+#define PIN_TRIG 7
+#define PIN_ECHO 6
+#define PIN_SERVO 5
+#define DISTANCIA_MAX 60 //distancia máxima (cm) que detecta sensor ultrasónico
 #define MICROS_EN_SEG 1000000.0
 #define MICROS_50HZ 20000
+#define VEL_SONIDO 29.287 // us/cm
 
 unsigned long t_inicio_loop; // Cuando inicia cada ciclo de tareas
 unsigned long t_loop_anterior; // Última ejecución de tareas
 unsigned long t_actual;
 
-void check_loop_freq(unsigned long t_inicio_loop, unsigned long t_fin_loop);
-float angulo_pote(int pote);
+NewPing sonar(PIN_TRIG, PIN_ECHO, DISTANCIA_MAX); 
+Servo servo;
+
+//void check_loop_freq(unsigned long t_inicio_loop, unsigned long t_fin_loop);
+//float angulo_pote(int pote);
 
 
 void setup() {
   Serial.begin(115200); // Suficientemente alto para que carguen los print
   t_inicio_loop = micros();
   t_loop_anterior = t_inicio_loop;
+  servo.attach(PIN_SERVO);
 }
 
 void loop() {
@@ -25,8 +37,13 @@ void loop() {
 
     // Ahora sí ejecuto tareas
     int lectura_pote = analogRead(PIN_POTE);
+    float angulo = angulo_pote(lectura_pote);
     Serial.print("Ángulo: ");
-    Serial.println(angulo_pote(lectura_pote));   
+    Serial.println(angulo);   
+
+    distancia();
+    //ejemplo_servo(); 
+    mover_servo_angulo(int(angulo));
   }
 }
 
@@ -42,3 +59,28 @@ void check_loop_freq(unsigned long t_inicio_loop, unsigned long t_fin_loop){
 float angulo_pote(int lectura_pote){
   return lectura_pote * (270.0/1023.0);
   }
+
+void distancia(){
+  unsigned int uS = sonar.ping(); // Tiempo de vuelo ida y vuelta
+  float distancia = uS/VEL_SONIDO;
+  Serial.print("Ping: ");
+  Serial.print(distancia); 
+  Serial.println("cm")
+}
+
+void mover_servo_angulo(int angulo){
+  int aux = min(angulo, 200); // if value is < 200 it's treated as an angle, otherwise as pulse width in microseconds
+  //Serial.println(aux);
+  servo.write(aux);                  // sets the servo position according to the scaled value
+}
+
+void ejemplo_servo(){ //PWM us activos por cada 2000us de periodo
+  servo.writeMicroseconds(1000);
+  delay(1000);
+  servo.writeMicroseconds(1500);
+  delay(1000);
+  servo.writeMicroseconds(2000);
+  delay(1000);
+  servo.writeMicroseconds(1500);
+  delay(1000);
+}
