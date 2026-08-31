@@ -9,6 +9,8 @@
 #define MICROS_EN_SEG 1000000.0
 #define MICROS_50HZ 20000
 #define VEL_SONIDO 29.287 // us/cm
+#define SERVO_MIN 550 // us PWM duty cycle 
+#define SERVO_MIN 2400 // us PWM duty cycle 
 
 unsigned long t_inicio_loop; // Cuando inicia cada ciclo de tareas
 unsigned long t_loop_anterior; // Última ejecución de tareas
@@ -17,15 +19,12 @@ unsigned long t_actual;
 NewPing sonar(PIN_TRIG, PIN_ECHO, DISTANCIA_MAX); 
 Servo servo;
 
-//void check_loop_freq(unsigned long t_inicio_loop, unsigned long t_fin_loop);
-//float angulo_pote(int pote);
-
 
 void setup() {
   Serial.begin(115200); // Suficientemente alto para que carguen los print
   t_inicio_loop = micros();
   t_loop_anterior = t_inicio_loop;
-  servo.attach(PIN_SERVO);
+  servo.attach(PIN_SERVO, SERVO_MIN, SERVO_MAX);
 }
 
 void loop() {
@@ -38,11 +37,10 @@ void loop() {
     // Ahora sí ejecuto tareas
     int lectura_pote = analogRead(PIN_POTE);
     float angulo = angulo_pote(lectura_pote);
-    Serial.print("Ángulo: ");
-    Serial.println(angulo);   
+    //Serial.print("Ángulo: ");
+    //Serial.println(angulo);   
 
     distancia();
-    //ejemplo_servo(); 
     mover_servo_angulo(int(angulo));
   }
 }
@@ -52,8 +50,8 @@ void check_loop_freq(unsigned long t_inicio_loop, unsigned long t_fin_loop){
   float t_seg = t / MICROS_EN_SEG;
   float f = 1/t_seg;
   
-  Serial.print("Frecuencia loop en Hz: ");
-  Serial.println(f);
+  //Serial.print("Frecuencia loop en Hz: ");
+  //Serial.println(f);
 }
 
 float angulo_pote(int lectura_pote){
@@ -63,9 +61,9 @@ float angulo_pote(int lectura_pote){
 void distancia(){
   unsigned int uS = sonar.ping(); // Tiempo de vuelo ida y vuelta
   float distancia = uS/VEL_SONIDO;
-  Serial.print("Ping: ");
-  Serial.print(distancia); 
-  Serial.println("cm")
+  //Serial.print("Ping: ");
+  //Serial.print(distancia); 
+  //Serial.println("cm")
 }
 
 void mover_servo_angulo(int angulo){
@@ -74,13 +72,9 @@ void mover_servo_angulo(int angulo){
   servo.write(aux);                  // sets the servo position according to the scaled value
 }
 
-void ejemplo_servo(){ //PWM us activos por cada 2000us de periodo
-  servo.writeMicroseconds(1000);
-  delay(1000);
-  servo.writeMicroseconds(1500);
-  delay(1000);
-  servo.writeMicroseconds(2000);
-  delay(1000);
-  servo.writeMicroseconds(1500);
-  delay(1000);
-}
+void servo_180(){ // Tarda aprox 0.75 segundos en hacer 180°
+  servo.writeMicroseconds(SERVO_MIN);
+  delay(2000);
+  servo.writeMicroseconds(SERVO_MAX);
+  delay(2000);
+  }
