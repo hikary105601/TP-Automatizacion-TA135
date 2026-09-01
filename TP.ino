@@ -5,8 +5,8 @@
 #include <Wire.h>
 
 #define MICROS_EN_SEG 1000000.0
-#define MICROS_100HZ 10000
-#define MICROS_ENVIO 20000 // 50Hz
+#define MICROS_50HZ 20000
+#define MICROS_ENVIO 20000 //
 
 unsigned long t_inicio_loop; // Cuando inicia cada ciclo de tareas
 unsigned long t_loop_anterior; // Última ejecución de tareas
@@ -42,10 +42,8 @@ void setup() {
 
 void loop() {
   t_actual = micros();
-  if(t_actual - t_inicio_loop >= MICROS_100HZ){
-    //check_loop_freq(t_loop_anterior,t_actual); // Verifico 20ms (50Hz) desde última ejecución
-    //t_loop_anterior = t_actual;
-    t_inicio_loop += MICROS_100HZ;
+  if(t_actual - t_inicio_loop >= MICROS_50HZ){
+    t_inicio_loop += MICROS_50HZ;
 
   // ---------- Ahora sí ejecuto tareas ----------
   mpu.getEvent(&a, &g, &temp);
