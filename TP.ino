@@ -8,9 +8,10 @@
 #define DISTANCIA_MAX 60 //distancia máxima (cm) que detecta sensor ultrasónico
 #define MICROS_EN_SEG 1000000.0
 #define MICROS_50HZ 20000
+#define MICROS_1HZ 1000000
 #define VEL_SONIDO 29.287 // us/cm
 #define SERVO_MIN 550 // us PWM duty cycle 
-#define SERVO_MIN 2400 // us PWM duty cycle 
+#define SERVO_MAX 2400 // us PWM duty cycle 
 
 unsigned long t_inicio_loop; // Cuando inicia cada ciclo de tareas
 unsigned long t_loop_anterior; // Última ejecución de tareas
@@ -67,8 +68,8 @@ void distancia(){
 }
 
 void mover_servo_angulo(int angulo){
-  int aux = min(angulo, 200); // if value is < 200 it's treated as an angle, otherwise as pulse width in microseconds
-  //Serial.println(aux);
+  int aux = min(angulo, 180); // if value is < 200 it's treated as an angle, otherwise as pulse width in microseconds
+  Serial.println(aux);
   servo.write(aux);                  // sets the servo position according to the scaled value
 }
 
