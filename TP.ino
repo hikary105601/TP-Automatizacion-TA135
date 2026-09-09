@@ -1,5 +1,6 @@
 #include <NewPing.h>
 #include <Servo.h>
+#include "IMU.h"
 
 #define PIN_POTE A0
 #define PIN_TRIG 7
@@ -16,13 +17,33 @@
 unsigned long t_inicio_loop; // Cuando inicia cada ciclo de tareas
 unsigned long t_loop_anterior; // Última ejecución de tareas
 unsigned long t_actual;
+unsigned long t_envio; // ciclo transferencia datos a simulink
 
 NewPing sonar(PIN_TRIG, PIN_ECHO, DISTANCIA_MAX); 
 Servo servo;
 
+Adafruit_MPU6050 mpu;
+sensors_event_t a, g, temp;
 
 void setup() {
   Serial.begin(115200); // Suficientemente alto para que carguen los print
+  
+  while (!Serial) delay(10); // will pause Zero, Leonardo, etc until serial console opens
+  if (!mpu.begin()) { // Try to initialize!
+    Serial.println("Failed to find MPU6050 chip");
+    while (1) {
+      delay(10);
+    }
+  }
+  Serial.println("MPU6050 Found!");
+
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);
+
+  Serial.println("");
+  delay(100);
+
   t_inicio_loop = micros();
   t_loop_anterior = t_inicio_loop;
   servo.attach(PIN_SERVO, SERVO_MIN, SERVO_MAX);
@@ -31,18 +52,17 @@ void setup() {
 void loop() {
   t_actual = micros();
   if(t_actual - t_inicio_loop >= MICROS_50HZ){
-    check_loop_freq(t_loop_anterior,t_actual); // Verifico 20ms (50Hz) desde última ejecución
-    t_loop_anterior = t_actual;
     t_inicio_loop += MICROS_50HZ;
 
-    // Ahora sí ejecuto tareas
-    int lectura_pote = analogRead(PIN_POTE);
-    float angulo = angulo_pote(lectura_pote);
-    //Serial.print("Ángulo: ");
-    //Serial.println(angulo);   
+  // ---------- Ahora sí ejecuto tareas ----------
+  mpu.getEvent(&a, &g, &temp);
+  
+  }
 
-    distancia();
-    mover_servo_angulo(int(angulo));
+  if(t_actual - t_envio >= MICROS_ENVIO){
+    t_envio += MICROS_ENVIO;
+    matlab_send(a,g);
+    //print_IMU(a, g, temp);
   }
 }
 
@@ -57,7 +77,7 @@ void check_loop_freq(unsigned long t_inicio_loop, unsigned long t_fin_loop){
 
 float angulo_pote(int lectura_pote){
   return lectura_pote * (270.0/1023.0);
-  }
+}
 
 void distancia(){
   unsigned int uS = sonar.ping(); // Tiempo de vuelo ida y vuelta
