@@ -66,8 +66,11 @@ void loop() {
     float gyro_angle = get_angle_gyro(g, last_approx);
     float accel_angle = get_angle_acceleration(a);
     float filter_angle = get_angle_filter(accel_angle, gyro_angle);
-    last_approx = filter_angle;
 
+    //last_approx = gyro_angle; // diverge
+    last_approx = filter_angle; // acotado
+
+    //print_IMU(a,g,temp);
     matlab_send_angles(gyro_angle, accel_angle, filter_angle);
   }
 }
