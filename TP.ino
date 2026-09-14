@@ -1,35 +1,33 @@
 #include <NewPing.h>
 #include <Servo.h>
+#include "MisConstantes.h"
+#include "MiServo.h"
 #include "IMU.h"
 
 #define PIN_POTE A0
 #define PIN_TRIG 7
 #define PIN_ECHO 6
 #define PIN_SERVO 5
-#define DISTANCIA_MAX 60 //distancia máxima (cm) que detecta sensor ultrasónico
-#define MICROS_EN_SEG 1000000.0
-#define MICROS_50HZ 20000
-#define MICROS_1HZ 1000000
-#define VEL_SONIDO 29.287 // us/cm
-#define SERVO_MIN 550 // us PWM duty cycle 
-#define SERVO_MAX 2400 // us PWM duty cycle 
+#define DISTANCIA_MAX 60   //distancia máxima (cm) que detecta sensor ultrasónico
+#define VEL_SONIDO 29.287  // us/cm
 
-unsigned long t_inicio_loop; // Cuando inicia cada ciclo de tareas
-unsigned long t_loop_anterior; // Última ejecución de tareas
+unsigned long t_inicio_loop;    // Cuando inicia cada ciclo de tareas
+unsigned long t_loop_anterior;  // Última ejecución de tareas
 unsigned long t_actual;
-unsigned long t_envio; // ciclo transferencia datos a simulink
+unsigned long t_envio;  // ciclo transferencia datos a simulink
 
-NewPing sonar(PIN_TRIG, PIN_ECHO, DISTANCIA_MAX); 
+NewPing sonar(PIN_TRIG, PIN_ECHO, DISTANCIA_MAX);
 Servo servo;
-
 Adafruit_MPU6050 mpu;
+
 sensors_event_t a, g, temp;
+static float last_approx;
 
 void setup() {
-  Serial.begin(115200); // Suficientemente alto para que carguen los print
-  
-  while (!Serial) delay(10); // will pause Zero, Leonardo, etc until serial console opens
-  if (!mpu.begin()) { // Try to initialize!
+  Serial.begin(115200);
+
+  while (!Serial) delay(10);  // will pause Zero, Leonardo, etc until serial console opens
+  if (!mpu.begin()) {         // Try to initialize!
     Serial.println("Failed to find MPU6050 chip");
     while (1) {
       delay(10);
@@ -44,58 +42,54 @@ void setup() {
   Serial.println("");
   delay(100);
 
+  servo.attach(PIN_SERVO, SERVO_MIN, SERVO_MAX);
+  inicializar_servo(servo); // se pone la barra en horizontal, es decir 90°
+  last_approx = 90.0; // condición inicial de ángulo para cálculo de filtro
+
   t_inicio_loop = micros();
   t_loop_anterior = t_inicio_loop;
-  servo.attach(PIN_SERVO, SERVO_MIN, SERVO_MAX);
 }
 
 void loop() {
   t_actual = micros();
-  if(t_actual - t_inicio_loop >= MICROS_50HZ){
+  if (t_actual - t_inicio_loop >= MICROS_50HZ) {
     t_inicio_loop += MICROS_50HZ;
 
-  // ---------- Ahora sí ejecuto tareas ----------
-  mpu.getEvent(&a, &g, &temp);
-  
+    // ---------- Ahora sí ejecuto tareas ----------
+    mpu.getEvent(&a, &g, &temp);
+    //get_angle_filter(a, g);
   }
 
-  if(t_actual - t_envio >= MICROS_ENVIO){
+  if (t_actual - t_envio >= MICROS_ENVIO) {
     t_envio += MICROS_ENVIO;
-    matlab_send(a,g);
-    //print_IMU(a, g, temp);
+    
+    float gyro_angle = get_angle_gyro(g, last_approx);
+    float accel_angle = get_angle_acceleration(a);
+    float filter_angle = get_angle_filter(accel_angle, gyro_angle);
+    last_approx = filter_angle;
+
+    matlab_send_angles(gyro_angle, accel_angle, filter_angle);
   }
 }
 
-void check_loop_freq(unsigned long t_inicio_loop, unsigned long t_fin_loop){
+
+void check_loop_freq(unsigned long t_inicio_loop, unsigned long t_fin_loop) {
   unsigned long t = t_fin_loop - t_inicio_loop;
   float t_seg = t / MICROS_EN_SEG;
-  float f = 1/t_seg;
-  
+  float f = 1 / t_seg;
+
   //Serial.print("Frecuencia loop en Hz: ");
   //Serial.println(f);
 }
 
-float angulo_pote(int lectura_pote){
-  return lectura_pote * (270.0/1023.0);
+float angulo_pote(int lectura_pote) {
+  return lectura_pote * (270.0 / 1023.0);
 }
 
-void distancia(){
-  unsigned int uS = sonar.ping(); // Tiempo de vuelo ida y vuelta
-  float distancia = uS/VEL_SONIDO;
+void distancia() {
+  unsigned int uS = sonar.ping();  // Tiempo de vuelo ida y vuelta
+  float distancia = uS / VEL_SONIDO;
   //Serial.print("Ping: ");
-  //Serial.print(distancia); 
+  //Serial.print(distancia);
   //Serial.println("cm")
 }
-
-void mover_servo_angulo(int angulo){
-  int aux = min(angulo, 180); // if value is < 200 it's treated as an angle, otherwise as pulse width in microseconds
-  Serial.println(aux);
-  servo.write(aux);                  // sets the servo position according to the scaled value
-}
-
-void servo_180(){ // Tarda aprox 0.75 segundos en hacer 180°
-  servo.writeMicroseconds(SERVO_MIN);
-  delay(2000);
-  servo.writeMicroseconds(SERVO_MAX);
-  delay(2000);
-  }
