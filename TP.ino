@@ -3,11 +3,12 @@
 #include "MisConstantes.h"
 #include "MiServo.h"
 #include "IMU.h"
+#include "Matlab.h"
 
 #define PIN_POTE A0
 #define PIN_TRIG 7
 #define PIN_ECHO 6
-#define PIN_SERVO 5
+#define PIN_SERVO 5   
 #define DISTANCIA_MAX 60   //distancia máxima (cm) que detecta sensor ultrasónico
 #define VEL_SONIDO 29.287  // us/cm
 
@@ -15,13 +16,25 @@ unsigned long t_inicio_loop;    // Cuando inicia cada ciclo de tareas
 unsigned long t_loop_anterior;  // Última ejecución de tareas
 unsigned long t_actual;
 unsigned long t_envio;  // ciclo transferencia datos a simulink
+unsigned long t_servo;
+static bool servo_up = true;
 
 NewPing sonar(PIN_TRIG, PIN_ECHO, DISTANCIA_MAX);
 Servo servo;
 Adafruit_MPU6050 mpu;
 
 sensors_event_t a, g, temp;
-static float last_approx;
+float filter_angle;
+
+#define MUESTRAS 400
+float transfer[MUESTRAS][2]; // 150 datos, columna para accion de control y angulo imu
+int muestra = 0;
+
+enum dato_angulo {
+  SERVO,
+  IMU
+};
+
 
 void setup() {
   Serial.begin(115200);
@@ -43,8 +56,9 @@ void setup() {
   delay(100);
 
   servo.attach(PIN_SERVO, SERVO_MIN, SERVO_MAX);
-  inicializar_servo(servo); // se pone la barra en horizontal, es decir 90°
-  last_approx = 90.0; // condición inicial de ángulo para cálculo de filtro
+  inicializar_servo(servo); // se pone la barra en horizontal
+
+  filter_angle = 0.0;
 
   t_inicio_loop = micros();
   t_loop_anterior = t_inicio_loop;
@@ -60,30 +74,37 @@ void loop() {
     //get_angle_filter(a, g);
   }
 
+  if(t_actual - t_servo >= MICROS_SERVO){
+    t_servo += MICROS_SERVO;
+    if(servo_up){
+      servo_min(servo);
+      servo_up = false;
+    }
+    else{
+      servo_max(servo);
+      //servo_up = true;
+    } 
+  }
+
   if (t_actual - t_envio >= MICROS_ENVIO) {
     t_envio += MICROS_ENVIO;
     
-    float gyro_angle = get_angle_gyro(g, last_approx);
+    float gyro_angle = get_angle_gyro(g, gyro_angle);
     float accel_angle = get_angle_acceleration(a);
-    float filter_angle = get_angle_filter(accel_angle, gyro_angle);
-
-    //last_approx = gyro_angle; // diverge
-    last_approx = filter_angle; // acotado
+    filter_angle = get_angle_filter(a, g, filter_angle);
 
     //print_IMU(a,g,temp);
-    matlab_send_angles(gyro_angle, accel_angle, filter_angle);
+    //matlab_send_angles(gyro_angle, accel_angle, filter_angle);
+/*
+    if(muestra < MUESTRAS){
+        transfer[muestra][SERVO] = servo.read();
+        transfer[muestra][IMU] = filter_angle;
+        muestra++;
+    }
   }
+  */
 }
 
-
-void check_loop_freq(unsigned long t_inicio_loop, unsigned long t_fin_loop) {
-  unsigned long t = t_fin_loop - t_inicio_loop;
-  float t_seg = t / MICROS_EN_SEG;
-  float f = 1 / t_seg;
-
-  //Serial.print("Frecuencia loop en Hz: ");
-  //Serial.println(f);
-}
 
 float angulo_pote(int lectura_pote) {
   return lectura_pote * (270.0 / 1023.0);
