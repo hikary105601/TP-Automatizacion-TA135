@@ -30,6 +30,7 @@ float filter_angle;
 float transfer[MUESTRAS][2]; // 150 datos, columna para accion de control y angulo imu
 int muestra = 0;
 
+
 enum dato_angulo {
   SERVO,
   IMU
@@ -101,8 +102,8 @@ void loop() {
         transfer[muestra][IMU] = filter_angle;
         muestra++;
     }
-  }
   */
+  }
 }
 
 
