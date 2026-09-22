@@ -7,6 +7,7 @@ void inicializar_servo(Servo &servo){
 }
 
 void servo_angulo(Servo &servo, int angulo){ //valores de -90 a 90
+/*Si el máximo y el mínimo no están a la misma distancia de SERVO_MID, habrá una precisión angular distinta hacia cada lado*/
   int angulo_map =  SERVO_MID;
 
   if(angulo < -90){

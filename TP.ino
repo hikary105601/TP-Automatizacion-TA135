@@ -1,16 +1,11 @@
 #include <NewPing.h>
 #include <Servo.h>
 #include "MisConstantes.h"
+#include "Potenciometro.h"
+#include "MiSonar.h"
 #include "MiServo.h"
 #include "IMU.h"
 #include "Matlab.h"
-
-#define PIN_POTE A0
-#define PIN_TRIG 7
-#define PIN_ECHO 6
-#define PIN_SERVO 5   
-#define DISTANCIA_MAX 60   //distancia máxima (cm) que detecta sensor ultrasónico
-#define VEL_SONIDO 29.287  // us/cm
 
 unsigned long t_inicio_loop;    // Cuando inicia cada ciclo de tareas
 unsigned long t_loop_anterior;  // Última ejecución de tareas
@@ -39,7 +34,7 @@ enum dato_angulo {
 
 void setup() {
   Serial.begin(115200);
-
+/*
   while (!Serial) delay(10);  // will pause Zero, Leonardo, etc until serial console opens
   if (!mpu.begin()) {         // Try to initialize!
     Serial.println("Failed to find MPU6050 chip");
@@ -55,7 +50,7 @@ void setup() {
 
   Serial.println("");
   delay(100);
-
+*/
   servo.attach(PIN_SERVO, SERVO_MIN, SERVO_MAX);
   inicializar_servo(servo); // se pone la barra en horizontal
 
@@ -70,12 +65,10 @@ void loop() {
   if (t_actual - t_inicio_loop >= MICROS_50HZ) {
     t_inicio_loop += MICROS_50HZ;
 
-    // ---------- Ahora sí ejecuto tareas ----------
-    mpu.getEvent(&a, &g, &temp);
-    //get_angle_filter(a, g);
+    mpu.getEvent(&a, &g, &temp);    
   }
 
-  if(t_actual - t_servo >= MICROS_SERVO){
+  if(t_actual - t_servo >= MICROS_SERVO){ // temporal, para pruebas
     t_servo += MICROS_SERVO;
     if(servo_up){
       servo_min(servo);
@@ -93,6 +86,7 @@ void loop() {
     float gyro_angle = get_angle_gyro(g, gyro_angle);
     float accel_angle = get_angle_acceleration(a);
     filter_angle = get_angle_filter(a, g, filter_angle);
+    Serial.println(accel_angle);
 
     //print_IMU(a,g,temp);
     //matlab_send_angles(gyro_angle, accel_angle, filter_angle);
@@ -104,17 +98,4 @@ void loop() {
     }
   */
   }
-}
-
-
-float angulo_pote(int lectura_pote) {
-  return lectura_pote * (270.0 / 1023.0);
-}
-
-void distancia() {
-  unsigned int uS = sonar.ping();  // Tiempo de vuelo ida y vuelta
-  float distancia = uS / VEL_SONIDO;
-  //Serial.print("Ping: ");
-  //Serial.print(distancia);
-  //Serial.println("cm")
 }

@@ -55,3 +55,11 @@ void print_IMU(sensors_event_t a, sensors_event_t g, sensors_event_t temp){
   Serial.println("");
   delay(1000);
 }
+
+void tiempo_lectura_imu(Adafruit_MPU6050 &mpu, sensors_event_t a, sensors_event_t g, sensors_event_t temp){
+    unsigned long antes_imu = micros();
+    mpu.getEvent(&a, &g, &temp);
+    unsigned long despues_imu = micros();
+    Serial.print("Tiempo de lectura de imu: ");
+    Serial.println(despues_imu - antes_imu);
+}
