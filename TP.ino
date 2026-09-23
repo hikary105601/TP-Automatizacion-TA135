@@ -21,20 +21,17 @@ Adafruit_MPU6050 mpu;
 sensors_event_t a, g, temp;
 float filter_angle;
 
-#define MUESTRAS 400
-float transfer[MUESTRAS][2]; // 150 datos, columna para accion de control y angulo imu
-int muestra = 0;
 
-
-enum dato_angulo {
-  SERVO,
-  IMU
+enum variables_regresion { // regresion lineal y_{n+1} = c_y * y_n + c_u * u_n
+  Y2, // y_{n+1}
+  Y1, // y_n
+  U1 // u_n
 };
-
+float datos_regresion[sizeof(variables_regresion)+1]; // [y_{n+1} y_n u_n]
 
 void setup() {
   Serial.begin(115200);
-/*
+
   while (!Serial) delay(10);  // will pause Zero, Leonardo, etc until serial console opens
   if (!mpu.begin()) {         // Try to initialize!
     Serial.println("Failed to find MPU6050 chip");
@@ -50,7 +47,7 @@ void setup() {
 
   Serial.println("");
   delay(100);
-*/
+
   servo.attach(PIN_SERVO, SERVO_MIN, SERVO_MAX);
   inicializar_servo(servo); // se pone la barra en horizontal
 
@@ -68,34 +65,27 @@ void loop() {
     mpu.getEvent(&a, &g, &temp);    
   }
 
-  if(t_actual - t_servo >= MICROS_SERVO){ // temporal, para pruebas
+  if(t_actual - t_servo >= MICROS_SERVO){ // cuadrada servos
     t_servo += MICROS_SERVO;
     if(servo_up){
       servo_min(servo);
+      datos_regresion[U1] = servo.read();
       servo_up = false;
     }
     else{
       servo_max(servo);
-      //servo_up = true;
+      datos_regresion[U1] = servo.read();
+      servo_up = true;
     } 
   }
 
   if (t_actual - t_envio >= MICROS_ENVIO) {
     t_envio += MICROS_ENVIO;
     
-    float gyro_angle = get_angle_gyro(g, gyro_angle);
-    float accel_angle = get_angle_acceleration(a);
+    datos_regresion[Y1] = filter_angle;
     filter_angle = get_angle_filter(a, g, filter_angle);
-    Serial.println(accel_angle);
-
-    //print_IMU(a,g,temp);
-    //matlab_send_angles(gyro_angle, accel_angle, filter_angle);
-/*
-    if(muestra < MUESTRAS){
-        transfer[muestra][SERVO] = servo.read();
-        transfer[muestra][IMU] = filter_angle;
-        muestra++;
-    }
-  */
+    datos_regresion[Y2] = filter_angle;
+    
+    matlab_send_regresion(datos_regresion, sizeof(variables_regresion)+1);
   }
 }

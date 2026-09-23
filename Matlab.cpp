@@ -27,10 +27,14 @@ void matlab_send_angles(float gyros, float accel, float filter){
   Serial.write(b, sizeof(float));
 }
 
-void matlab_send_transfer(float servo_angle, float imu_angle){
+
+void matlab_send_regresion(float datos_regresion[], int cant_datos){
+  byte * b = NULL;
+
   Serial.write("abcd");
-  byte * b = (byte *) &servo_angle;
-  Serial.write(b, sizeof(float));
-  b = (byte *) &imu_angle;
-  Serial.write(b, sizeof(float));
+  for(int i=0; i<cant_datos; i++){
+    b = (byte *) &datos_regresion[i];
+    Serial.write(b, sizeof(float));
+  }
+  
 }

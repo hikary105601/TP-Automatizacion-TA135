@@ -14,11 +14,11 @@ float get_angle_gyro(sensors_event_t g, float last_approx){ //,
 
 float get_angle_acceleration(sensors_event_t a){
 
-  float y = a.acceleration.y; // lados
-  float z = a.acceleration.z; // arriba
+  float y = a.acceleration.y; // horizontal
+  float z = -a.acceleration.z; // vertical
   float angulo = degrees(atan2(y,z)); // va de -180 a +180
 
-  return angulo; // 0 si componentes hacia arriba
+  return angulo; // 0 si componentes hacia abajo
 }
 
 float get_angle_filter(sensors_event_t a, sensors_event_t g, float last_filter){

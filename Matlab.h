@@ -7,5 +7,6 @@
 
 void matlab_test_imu(sensors_event_t a, sensors_event_t g);
 void matlab_send_angles(float gyros, float accel, float filter);
+void matlab_send_regresion(float datos_regresion[], int cant_datos);
 
 #endif
