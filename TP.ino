@@ -27,7 +27,7 @@ enum variables_regresion { // regresion lineal y_{n+1} = c_y * y_n + c_u * u_n
   Y1, // y_n
   U1 // u_n
 };
-float datos_regresion[sizeof(variables_regresion)+1]; // [y_{n+1} y_n u_n]
+float datos_regresion[3]; // [y_{n+1} y_n u_n]
 
 void setup() {
   Serial.begin(115200);
@@ -69,12 +69,12 @@ void loop() {
     t_servo += MICROS_SERVO;
     if(servo_up){
       servo_min(servo);
-      datos_regresion[U1] = servo.read();
+      datos_regresion[U1] = servo.read() - 90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = false;
     }
     else{
       servo_max(servo);
-      datos_regresion[U1] = servo.read();
+      datos_regresion[U1] = servo.read() - 90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = true;
     } 
   }
@@ -86,6 +86,6 @@ void loop() {
     filter_angle = get_angle_filter(a, g, filter_angle);
     datos_regresion[Y2] = filter_angle;
     
-    matlab_send_regresion(datos_regresion, sizeof(variables_regresion)+1);
+    matlab_send_regresion(datos_regresion, 3);
   }
 }
