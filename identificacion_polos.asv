@@ -1,4 +1,4 @@
-close all;
+clc;
 if ~isfile('datos_identificacion.mat')
     error('No se encuentra el archivo datos_identificacion.mat. Obtenga datos de Simulink');
 end
@@ -56,23 +56,9 @@ fprintf('Polos continuos en S:\n');
 disp(polos_continuos);
 
 %======== Ahora sí, comparo planta ========
-s = tf('s');
+syms s;
 
-p1 = polos_continuos(1);
-p2 = polos_continuos(2);
+p1 = polos_continuos(1,:);
+p2 = polos_continuos(2,:);
 
-Planta = (p1*p2)/((s-p1)*(s-p2)); % numerador = cu?
-sys = tf(Planta);
-
-[y_simulado, ~] = lsim(sys, u_n, tiempo);
-
-figure('Name', 'Validación del Modelo Continuo Identificado', 'Color', 'w');
-plot(tiempo, y_n, 'LineWidth', 1.5, 'Color', 'r'); hold on;
-plot(tiempo, u_n, 'LineWidth', 1.5, 'Color', 'b'); 
-plot(tiempo, y_simulado, '--', 'LineWidth', 1.8, 'Color', [0 0.5 0]); % Curva simulada en verde punteado
-xlabel('Tiempo [s]');
-ylabel('Magnitud');
-title('Comparación: Sistema Real vs Modelo Identificado');
-legend('y_n (Real)', 'u_n (Entrada)', 'y_{simulado}', 'Location', 'Best');
-grid on;
-hold off;
+Planta = 1/((s-p1)*(s-p2))

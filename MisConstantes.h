@@ -5,7 +5,7 @@
 #define PIN_TRIG 7
 #define PIN_ECHO 6
 #define PIN_SERVO 5   
-#define DISTANCIA_MAX 40   //distancia máxima (cm) que detecta sensor ultrasónico = longitud de la barra
+#define DISTANCIA_MAX 45   //distancia máxima (cm) que detecta sensor ultrasónico = longitud de la barra
 #define VEL_SONIDO 29.287  // us/cm
 
 #define MICROS_EN_SEG 1000000.0

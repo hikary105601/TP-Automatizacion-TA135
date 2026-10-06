@@ -32,6 +32,11 @@ enum variables_regresion { // regresion lineal segundo orden y_n = c_y1 * y_{n-1
 float datos_regresion[4]; // [y_n y_{n-1} y_{n-2} u_n]
 
 float referencia_distancia = 16.0;
+float derivativo_acumulado;
+float integral_acumulado;
+float e0;
+float e1;
+
 
 void setup() {
   Serial.begin(115200);
@@ -62,6 +67,11 @@ void setup() {
     datos_regresion[i] = 0.0;
   }
 
+  derivativo_acumulado = 0.0;
+  integral_acumulado = 0.0;
+  e0 = 0.0;
+  e1 = 0.0;
+
   t_inicio_loop = micros();
   t_loop_anterior = t_inicio_loop;
 }
@@ -72,10 +82,13 @@ void loop() {
     t_inicio_loop += MICROS_50HZ;
 
     mpu.getEvent(&a, &g, &temp);    
-    float e0 = referencia_distancia - distancia_cm(sonar);
-    Serial.println(control_p(e0));
-    servo_angulo(servo, control_p(e0));
+    
+    e0 = referencia_distancia - distancia_cm(sonar);
+    float u = control_pid(&derivativo_acumulado, &integral_acumulado, e0, e1);
+    e1 = e0;
+    servo_angulo(servo, u);
   }
+
 /*
   if(t_actual - t_servo >= MICROS_SERVO){ // cuadrada servos
     t_servo += MICROS_SERVO;
@@ -91,7 +104,7 @@ void loop() {
     } 
   }
 */
-/*
+
   if (t_actual - t_envio >= MICROS_ENVIO) {
     t_envio += MICROS_ENVIO;
     
@@ -101,7 +114,8 @@ void loop() {
     datos_regresion[Y1] = datos_regresion[Y0];
     datos_regresion[Y0] = filter_angle;
     
-    matlab_send_regresion(datos_regresion, 4);
+    //matlab_send_regresion(datos_regresion, 4);
+    matlab_send_sonar(e0);//distancia_cm(sonar));
   }
-  */
+
 }
