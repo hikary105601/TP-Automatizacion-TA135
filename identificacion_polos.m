@@ -1,45 +1,56 @@
-if ~isfile('serial_data.txt')
-    error('No se encuentra el archivo serial_data.txt. Ejecute primero captura.m');
+if ~isfile('datos_identificacion.mat')
+    error('No se encuentra el archivo datos_identificacion.mat. Obtenga datos de Simulink');
 end
 
-matriz_datos = readmatrix('serial_data.txt');
+data = load('datos_identificacion.mat');
+matriz_datos = squeeze(data.out.Prueba{1}.Values.Data);
 
-Y_vector = matriz_datos(:, 1); % y_{n+1}
-y_n      = matriz_datos(:, 2); % y_n
-u_n      = matriz_datos(:, 3); % u_n   
+y_n   = matriz_datos(:, 1); % ángulo barra actual
+y_n_1 = matriz_datos(:, 2); % y_{n-1} angulo previo
+y_n_2 = matriz_datos(:, 3); % y_{n-2}
+u_n   = matriz_datos(:, 4); % ángulo comandado a servo actual
 
+Ts = 0.02; % muestreo de 50 Hz (20 ms)
+num_muestras = size(matriz_datos, 1); % cantidad de filas (500)
+tiempo = (0:num_muestras - 1)' * Ts; 
 
-% Gráfico
-Ts = 0.02; % Tiempo de muestreo (MICROS_ENVIO en segundos -> 0.02s)
-tiempo = (0:length(Y_vector)-1) * Ts;
-
-figure('Name', 'Validación de Transitorios del Experimento', 'Color', 'w');
-plot(tiempo, Y_vector, 'LineWidth', 1.5, 'Color', 'r'); hold on;
-plot(tiempo, y_n, 'LineWidth', 1.5, 'Color', 'g'); hold on;
-plot(tiempo, u_n, 'LineWidth', 1.5, 'Color', 'b'); hold on;
+% 2. Visualización de los transitorios (Gráfica de verificación)
+figure('Name', 'Validación de Transitorios - Segundo Orden', 'Color', 'w');
+plot(tiempo, y_n, 'LineWidth', 1.5, 'Color', 'r'); hold on;
+plot(tiempo, y_n_1, 'LineWidth', 1.5, 'Color', 'g'); 
+plot(tiempo, y_n_2, 'LineWidth', 1.5, 'Color', 'm'); 
+plot(tiempo, u_n, 'LineWidth', 1.5, 'Color', 'b'); 
 xlabel('Tiempo [s]');
-ylabel('Ángulo [°]');
-title('Respuesta a escalón');
-legend('y_{n+1}', 'y_n', 'u_n');
+ylabel('Magnitud');
+title('Respuesta a escalón - Sistema de Segundo Orden');
+legend('y_n', 'y_{n-1}', 'y_{n-2}', 'u_n');
 grid on;
 hold off;
 
-% 3. Resolución por Cuadrados Mínimos (Clase 4)
-% Modelo: y_{n+1} = c_y * y_n + c_u * u_n  -->  Y = X * alpha
-Y = Y_vector;                  
-X = [y_n, u_n];                
+% 3. Resolución por Cuadrados Mínimos (Modelo de Segundo Orden)
+% Ecuación en diferencias: y_n = c_{y1}*y_{n-1} + c_{y2}*y_{n-2} + c_u*u_n  -->  Y = X * alpha
+Y = y_n;                  
+X = [y_n_1, y_n_2, u_n];                
 
-% Solución óptima: alpha = (X^T * X)^-1 * X^T * Y
-alpha = (X' * X) \ (X' * Y);
+alpha = (X' * X) \ (X' * Y); % (X^T * X)^-1 * X^T * Y
 
-cy = alpha(1);                 % Coeficiente de la salida anterior (polo discreto)
-cu = alpha(2);                 % Coeficiente de la acción de control
+cy1 = alpha(1);
+cy2 = alpha(2);
+cu  = alpha(3);
 
 
-% 4. Obtención de Polos y Conversión a Continuo
-polo_discreto = cy;
-polo_continuo = log(polo_discreto) / Ts;
+% Los polos discretos son las raíces del polinomio característico: z^2 - cy1*z - cy2 = 0
+polos_discretos = roots([1, -cy1, -cy2]);
 
-fprintf('\n--- RESULTADOS DE IDENTIFICACIÓN ---\n');
-fprintf('Polo discreto en Z: %.4f\n', polo_discreto);
-fprintf('Polo continuo en S: %.4f\n', polo_continuo);
+% Conversión a tiempo continuo mediante s = ln(z) / Ts
+polos_continuos = log(polos_discretos) / Ts;
+
+fprintf('\n--- RESULTADOS DE IDENTIFICACIÓN (SEGUNDO ORDEN) ---\n');
+fprintf('Coeficientes estimados:\n');
+fprintf('cy1 = %.4f, cy2 = %.4f, cu = %.4f\n\n', cy1, cy2, cu);
+
+fprintf('Polos discretos en Z:\n');
+disp(polos_discretos);
+
+fprintf('Polos continuos en S:\n');
+disp(polos_continuos);

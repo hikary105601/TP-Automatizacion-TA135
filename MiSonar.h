@@ -4,6 +4,6 @@
 #include <NewPing.h>
 
 float distancia_cm(NewPing &sonar);
-void tiempo_lectura_sonar(NewPing &sonar);
+unsigned long tiempo_lectura_sonar(NewPing &sonar);
 
 #endif

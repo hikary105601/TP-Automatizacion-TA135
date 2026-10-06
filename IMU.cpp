@@ -2,11 +2,9 @@
 
 static float dt = MICROS_50HZ / MICROS_EN_SEG ; // diferencial de tiempo para el giroscopio
 
-
-
 float get_angle_gyro(sensors_event_t g, float last_approx){ //,
   
-  float x = degrees(g.gyro.x); // rad/s
+  float x = -degrees(g.gyro.x); // rad/s
   float angulo_gx = last_approx + x * dt; 
 
   return angulo_gx;
@@ -30,6 +28,12 @@ float get_angle_filter(sensors_event_t a, sensors_event_t g, float last_filter){
   return (1 - alpha) * angle_gyros + alpha * angle_accel;
 }
 
+unsigned long tiempo_lectura_imu(Adafruit_MPU6050 &mpu, sensors_event_t a, sensors_event_t g, sensors_event_t temp){
+    unsigned long antes_imu = micros();
+    mpu.getEvent(&a, &g, &temp);
+    unsigned long despues_imu = micros();
+    return despues_imu - antes_imu;
+}
 
 void print_IMU(sensors_event_t a, sensors_event_t g, sensors_event_t temp){
   Serial.print("Acceleration X: ");
@@ -54,12 +58,4 @@ void print_IMU(sensors_event_t a, sensors_event_t g, sensors_event_t temp){
   
   Serial.println("");
   delay(1000);
-}
-
-void tiempo_lectura_imu(Adafruit_MPU6050 &mpu, sensors_event_t a, sensors_event_t g, sensors_event_t temp){
-    unsigned long antes_imu = micros();
-    mpu.getEvent(&a, &g, &temp);
-    unsigned long despues_imu = micros();
-    Serial.print("Tiempo de lectura de imu: ");
-    Serial.println(despues_imu - antes_imu);
 }

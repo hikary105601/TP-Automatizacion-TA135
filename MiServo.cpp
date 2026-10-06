@@ -6,21 +6,17 @@ void inicializar_servo(Servo &servo){
   delay(2000);
 }
 
-void servo_angulo(Servo &servo, int angulo){ //valores de -90 a 90
-/*Si el máximo y el mínimo no están a la misma distancia de SERVO_MID, habrá una precisión angular distinta hacia cada lado*/
-  int angulo_map =  SERVO_MID;
+void servo_angulo(Servo &servo, float angulo) { 
+  float angulo_restringido = constrain(angulo, -90.0, 90.0);
+  int pulso_us;
 
-  if(angulo < -90){
-    angulo_map = SERVO_MIN;
-  }else if(angulo > 90){
-    angulo_map =  SERVO_MAX;  
-  }else if(-90 <= angulo && angulo <= 0){
-    angulo_map = map(angulo, -90, 0, SERVO_MIN, SERVO_MID);
-  }else if (0 < angulo && angulo <= 90){
-    angulo_map = map(angulo, 0, 90, SERVO_MID, SERVO_MAX);
+  if (angulo_restringido <= 0.0) {
+    pulso_us = SERVO_MIN + ((angulo_restringido + 90.0) / 90.0) * (SERVO_MID - SERVO_MIN);
+  } else {
+    pulso_us = SERVO_MID + (angulo_restringido / 90.0) * (SERVO_MAX - SERVO_MID);
   }
   
-  servo.writeMicroseconds(angulo_map);
+  servo.writeMicroseconds(pulso_us);
 }
 
 void servo_min(Servo &servo){ // Tarda aprox 0.75 segundos en hacer 180° => 1.333 Hz
