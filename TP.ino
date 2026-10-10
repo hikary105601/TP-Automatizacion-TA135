@@ -86,14 +86,14 @@ void loop() {
     e0 = referencia_distancia - distancia_cm(sonar);
     float u = control_pid(&derivativo_acumulado, &integral_acumulado, e0, e1);
     e1 = e0;
-    servo_angulo(servo, u);
+    //servo_angulo(servo, u);
   }
 
-/*
+
   if(t_actual - t_servo >= MICROS_SERVO){ // cuadrada servos
     t_servo += MICROS_SERVO;
     if(servo_up){
-      servo_min(servo);
+      servo_mid(servo);
       datos_regresion[U0] = servo.read() - 90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = false;
     }
@@ -103,7 +103,7 @@ void loop() {
       servo_up = true;
     } 
   }
-*/
+
 
   if (t_actual - t_envio >= MICROS_ENVIO) {
     t_envio += MICROS_ENVIO;
@@ -114,8 +114,8 @@ void loop() {
     datos_regresion[Y1] = datos_regresion[Y0];
     datos_regresion[Y0] = filter_angle;
     
-    //matlab_send_regresion(datos_regresion, 4);
-    matlab_send_sonar(e0);//distancia_cm(sonar));
+    matlab_send_regresion(datos_regresion, 4);
+    //matlab_send_sonar(e0);//distancia_cm(sonar));
   }
 
 }

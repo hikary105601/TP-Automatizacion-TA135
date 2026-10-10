@@ -61,7 +61,7 @@ s = tf('s');
 p1 = polos_continuos(1);
 p2 = polos_continuos(2);
 
-Planta = (p1*p2)/((s-p1)*(s-p2)); % numerador = cu?
+Planta = (cu*p1*p2)/((1-cy1-cy2)*(s-p1)*(s-p2)); % numerador = cu?
 sys = tf(Planta);
 
 [y_simulado, ~] = lsim(sys, u_n, tiempo);

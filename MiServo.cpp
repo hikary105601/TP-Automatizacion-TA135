@@ -26,3 +26,7 @@ void servo_min(Servo &servo){ // Tarda aprox 0.75 segundos en hacer 180° => 1.3
 void servo_max(Servo &servo){
   servo.writeMicroseconds(SERVO_MAX);
 }
+
+void servo_mid(Servo &servo){
+  servo.writeMicroseconds(SERVO_MID);
+}
