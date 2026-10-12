@@ -35,9 +35,9 @@ X = [y_n_1(:), y_n_2(:), u_n(:)];
 
 alpha = (X' * X) \ (X' * Y); % (X^T * X)^-1 * X^T * Y
 
-cy1 = alpha(1);
-cy2 = alpha(2);
-cu  = alpha(3);
+cy1 = alpha(1); % -(p1+p2)/(p1*p2)
+cy2 = alpha(2); % -1/(p1*p2)
+cu  = alpha(3); % k/(p1*p2)
 
 % Los polos discretos son las raíces del polinomio característico: z^2 - cy1*z - cy2 = 0
 polos_discretos = roots([1, -cy1, -cy2]);
@@ -45,7 +45,6 @@ polos_discretos = roots([1, -cy1, -cy2]);
 % Conversión a tiempo continuo mediante s = ln(z) / Ts
 polos_continuos = log(polos_discretos) / Ts;
 
-fprintf('\n--- RESULTADOS DE IDENTIFICACIÓN (SEGUNDO ORDEN) ---\n');
 fprintf('Coeficientes estimados:\n');
 fprintf('cy1 = %.4f, cy2 = %.4f, cu = %.4f\n\n', cy1, cy2, cu);
 
@@ -61,7 +60,8 @@ s = tf('s');
 p1 = polos_continuos(1);
 p2 = polos_continuos(2);
 
-Planta = (cu*p1*p2)/((1-cy1-cy2)*(s-p1)*(s-p2)); % numerador = cu?
+k_planta = (cu*p1*p2)/(1-cy1-cy2);
+Planta = k_planta/((s-p1)*(s-p2));
 sys = tf(Planta);
 
 [y_simulado, ~] = lsim(sys, u_n, tiempo);
@@ -76,3 +76,24 @@ title('Comparación: Sistema Real vs Modelo Identificado');
 legend('y_n (Real)', 'u_n (Entrada)', 'y_{simulado}', 'Location', 'Best');
 grid on;
 hold off;
+
+% ==== Control digital ====
+% Ts = 0.02 --> omega_s = 314 rad/s
+% Ogata pg 171 respuesta de sistemas de segundo orden
+% la frecuencia de gain crossover es del mismo orden que la frecuencia natural
+k = db2mag(28.9);
+Controlador = (k*(s+11)^2)/(s*(s+200));
+L = sys*Controlador;
+figure;bode(L);
+
+C_z = c2d(Controlador, Ts, 'tustin');
+
+S=1/(1+L);
+T=1-S; 
+PS=minreal(sys*S);
+CS=minreal(Controlador*S);
+
+figure; bode(S,T);
+%si hacemos bode(S) leemos peak de 0.381dB en 80.4rad/seg
+%calculamos el sm como:
+sm=1/(db2mag(80.4));
