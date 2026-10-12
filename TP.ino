@@ -34,8 +34,10 @@ float datos_regresion[4]; // [y_n y_{n-1} y_{n-2} u_n]
 float referencia_distancia = 16.0;
 float derivativo_acumulado;
 float integral_acumulado;
-float e0;
-float e1;
+//float e0;
+//float e1;
+float e[3]; // error angulo barra [e_n e_{n-1} e_{n-2}]
+float u[3]; // accion de control  [u_n u_{n-1} u_{n-2}]
 
 
 void setup() {
@@ -69,8 +71,12 @@ void setup() {
 
   derivativo_acumulado = 0.0;
   integral_acumulado = 0.0;
-  e0 = 0.0;
-  e1 = 0.0;
+  for(int i=0; i<3; i++){
+    e[i] = 0.0;
+    u[i] = 0.0;
+  }
+  //e0 = 0.0;
+  //e1 = 0.0;
 
   t_inicio_loop = micros();
   t_loop_anterior = t_inicio_loop;
@@ -83,13 +89,19 @@ void loop() {
 
     mpu.getEvent(&a, &g, &temp);    
     
-    e0 = referencia_distancia - distancia_cm(sonar);
-    float u = control_pid(&derivativo_acumulado, &integral_acumulado, e0, e1);
-    e1 = e0;
-    //servo_angulo(servo, u);
+    e[2] = e[1];
+    e[1] = e[0];
+    //e[0] = referencia_distancia - distancia_cm(sonar);
+    e[0] = 0.0 - get_angle_filter(a, g, filter_angle);
+
+    u[2] = u[1];
+    u[1] = u[0];
+    u[0] = control_bilinear(e, u); //control_pid(&derivativo_acumulado, &integral_acumulado, e);
+
+    servo_angulo(servo, u[0]);
   }
 
-
+/*
   if(t_actual - t_servo >= MICROS_SERVO){ // cuadrada servos
     t_servo += MICROS_SERVO;
     if(servo_up){
@@ -103,7 +115,7 @@ void loop() {
       servo_up = true;
     } 
   }
-
+*/
 
   if (t_actual - t_envio >= MICROS_ENVIO) {
     t_envio += MICROS_ENVIO;
@@ -114,8 +126,7 @@ void loop() {
     datos_regresion[Y1] = datos_regresion[Y0];
     datos_regresion[Y0] = filter_angle;
     
-    matlab_send_regresion(datos_regresion, 4);
-    //matlab_send_sonar(e0);//distancia_cm(sonar));
+    //matlab_send_regresion(datos_regresion, 4);
   }
 
 }
