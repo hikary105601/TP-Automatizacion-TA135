@@ -1,10 +1,10 @@
 close all;
-if ~isfile('datos_identificacion.mat')
+if ~isfile('identificacion2.mat')
     error('No se encuentra el archivo datos_identificacion.mat. Obtenga datos de Simulink');
 end
 
-data = load('datos_identificacion.mat');
-matriz_datos = squeeze(data.out.Prueba{1}.Values.Data);
+data = load('identificacion2.mat');
+matriz_datos = squeeze(data.out.Prueba2{1}.Values.Data);
 
 y_n   = matriz_datos(1,:); % ángulo barra actual
 y_n_1 = matriz_datos(2,:); % y_{n-1} angulo previo
@@ -93,7 +93,7 @@ T=1-S;
 PS=minreal(sys*S);
 CS=minreal(Controlador*S);
 
-figure; bode(S,T);
+%figure; bode(S,T);
 %si hacemos bode(S) leemos peak de 0.381dB en 80.4rad/seg
 %calculamos el sm como:
 sm=1/(db2mag(80.4));

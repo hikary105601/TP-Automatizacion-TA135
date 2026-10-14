@@ -8,6 +8,11 @@
 #include "Matlab.h"
 #include "Controlador.h"
 
+int calibration = CALIBRATION;
+float offset_gyro = 0.0;
+float gyro = 0.0;
+float accel = 0.0;
+
 unsigned long t_inicio_loop;    // Cuando inicia cada ciclo de tareas
 unsigned long t_loop_anterior;  // Última ejecución de tareas
 unsigned long t_actual;
@@ -32,6 +37,7 @@ enum variables_regresion { // regresion lineal segundo orden y_n = c_y1 * y_{n-1
 float datos_regresion[4]; // [y_n y_{n-1} y_{n-2} u_n]
 
 float referencia_distancia = 16.0;
+float distancia;
 float derivativo_acumulado;
 float integral_acumulado;
 //float e0;
@@ -39,9 +45,21 @@ float integral_acumulado;
 float e[3]; // error angulo barra [e_n e_{n-1} e_{n-2}]
 float u[3]; // accion de control  [u_n u_{n-1} u_{n-2}]
 
+float A_d[2][2] = {{0,1}, {-132.8, -20.92}};
+float B_d[2] = {0, 82.663};
+float C_d[2] = {1, 0};
+float D_d = 0.0;
+float L[2] = {0.7590, -0.4596};
+float x_est[2] = {0.0, 0.0};
+float y_est = 0.0;
+float vel_angular = 0.0;
+float vel_angular_est = 0.0;
 
 void setup() {
   Serial.begin(115200);
+
+  //pinMode(PIN_TRIG, OUTPUT);
+  //pinMode(PIN_ECHO, INPUT);
 
   while (!Serial) delay(10);  // will pause Zero, Leonardo, etc until serial console opens
   if (!mpu.begin()) {         // Try to initialize!
@@ -53,7 +71,7 @@ void setup() {
   Serial.println("MPU6050 Found!");
 
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG); //2000
   mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);
 
   Serial.println("");
@@ -75,8 +93,7 @@ void setup() {
     e[i] = 0.0;
     u[i] = 0.0;
   }
-  //e0 = 0.0;
-  //e1 = 0.0;
+
 
   t_inicio_loop = micros();
   t_loop_anterior = t_inicio_loop;
@@ -87,46 +104,70 @@ void loop() {
   if (t_actual - t_inicio_loop >= MICROS_50HZ) {
     t_inicio_loop += MICROS_50HZ;
 
-    mpu.getEvent(&a, &g, &temp);    
-    
+    mpu.getEvent(&a, &g, &temp);
+    distancia = distancia_cm(sonar);
+    filter_angle = get_angle_filter(a, g, filter_angle);
+    vel_angular = g.gyro.x;
+
     e[2] = e[1];
     e[1] = e[0];
-    //e[0] = referencia_distancia - distancia_cm(sonar);
-    e[0] = 0.0 - get_angle_filter(a, g, filter_angle);
+    //e[0] = referencia_distancia - distancia;
+    e[0] = 0.0 - filter_angle;
 
     u[2] = u[1];
     u[1] = u[0];
-    u[0] = control_bilinear(e, u); //control_pid(&derivativo_acumulado, &integral_acumulado, e);
+    //u[0] = //control_pid(&derivativo_acumulado, &integral_acumulado, e);
+    u[0] = control_bilinear(e, u);
 
-    servo_angulo(servo, u[0]);
+    //servo_angulo(servo, u[0]);
+
+    y_est = C_d[0]*x_est[0] + C_d[1]*x_est[1];
+    for(int i=0; i < 2; i++){
+      float aux = 0.0;
+      for(int j=0; j < 2; j++){
+        aux += A_d[i][j] * x_est[j];
+      }
+      x_est[i] = aux + B_d[i] * u[0] + L[i] *(filter_angle - y_est);
+    }
+    vel_angular_est = x_est[1];
   }
 
-/*
+
   if(t_actual - t_servo >= MICROS_SERVO){ // cuadrada servos
     t_servo += MICROS_SERVO;
     if(servo_up){
       servo_mid(servo);
-      datos_regresion[U0] = servo.read() - 90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
+      datos_regresion[U0] = servo.read() - 91; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = false;
     }
     else{
       servo_max(servo);
-      datos_regresion[U0] = servo.read() - 90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
+      datos_regresion[U0] = servo.read() - 91; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = true;
     } 
   }
-*/
 
   if (t_actual - t_envio >= MICROS_ENVIO) {
     t_envio += MICROS_ENVIO;
-    
-    filter_angle = get_angle_filter(a, g, filter_angle);
 
     datos_regresion[Y2] =  datos_regresion[Y1];
     datos_regresion[Y1] = datos_regresion[Y0];
     datos_regresion[Y0] = filter_angle;
     
     //matlab_send_regresion(datos_regresion, 4);
+
+    //matlab_send_sonar(distancia);
+    //Serial.println(distancia_cm(sonar));
+
+    Serial.write("abcd");
+    byte * b = (byte *) &filter_angle;
+    Serial.write(b, sizeof(float));
+    b = (byte *) &y_est;
+    Serial.write(b, sizeof(float));
+    b = (byte *) &vel_angular;
+    Serial.write(b, sizeof(float));
+    b = (byte *) &vel_angular_est;
+    Serial.write(b, sizeof(float));
   }
 
 }

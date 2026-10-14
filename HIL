@@ -1,0 +1,74 @@
+//#include "TimerOne.h"
+
+typedef union{
+  float number;
+  uint8_t bytes[4];
+} FLOATUNION_t;
+
+float ek_2 = 0.0; //e[n-2]
+float ek_1 = 0.0; //e[n-1]
+float ek = 0.0; //e[n]
+float uk_1 = 0.0; //u[n-1]
+float uk_2 = 0.0; //u[n-2]
+
+
+void setup()
+{
+  Serial.begin(115200);
+}
+
+void loop()
+{
+  // Ajustar condiciones iniciales de trabajo
+  static float u0=0.5, h_ref=0.4, h=0.45, u;
+  static float Ts=1;
+  FLOATUNION_t aux;
+  static float sampling_period_ms = 1000*Ts;
+  //=========================
+  // Definir parametros y variables del control
+
+
+  //=========================
+
+  if (Serial.available() >= 8) {
+ 
+    aux.number = getFloat();
+    h = aux.number;
+    aux.number = getFloat();
+    h_ref = aux.number;
+  }
+  //=========================
+  //CONTROL
+  ek = h_ref - h;
+  u = 1.12*uk_1 - 0.12 *uk_2 -4.95*ek + 4.9*ek_1;   // 1 -1.1695 0.1695]
+  // if(u > 0.5) u = 0.5;
+  // if(u < -0.5) u = -0.5;
+  //ek_2 = ek_1;
+  ek_1 = ek;
+  uk_2 = uk_1;
+  uk_1 = u;
+  //=========================
+    
+  matlab_send(u+u0,h_ref,u0);
+  delay(sampling_period_ms);
+}
+
+void matlab_send(float u, float h, float u0){
+  Serial.write("abcd");
+  byte * b = (byte *) &u;
+  Serial.write(b,4);
+  b = (byte *) &h;
+  Serial.write(b,4);
+  b = (byte *) &u0;
+  Serial.write(b,4);
+}
+
+float getFloat(){
+    int cont = 0;
+    FLOATUNION_t f;
+    while (cont < 4 ){
+        f.bytes[cont] = Serial.read() ;
+        cont = cont +1;
+    }
+    return f.number;
+}
