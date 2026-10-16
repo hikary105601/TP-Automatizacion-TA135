@@ -150,7 +150,7 @@ void loop() {
     t_envio += MICROS_ENVIO;
 
     datos_regresion[Y0] = filter_angle;
-    matlab_send(datos_regresion, 2);
+    //matlab_send(datos_regresion, 2);
 
     //matlab_send(datos_observador, 4);
   }
