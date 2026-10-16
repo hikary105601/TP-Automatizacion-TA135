@@ -1,37 +1,36 @@
 close all;
-if ~isfile('identificacion2.mat')
+if ~isfile('identificacion.mat')
     error('No se encuentra el archivo datos_identificacion.mat. Obtenga datos de Simulink');
 end
 
-data = load('identificacion2.mat');
-matriz_datos = squeeze(data.out.Prueba2{1}.Values.Data);
+data = load('identificacion.mat');
+matriz_datos = squeeze(data.out.Prueba{1}.Values.Data);
 
 y_n   = matriz_datos(1,:); % ángulo barra actual
-y_n_1 = matriz_datos(2,:); % y_{n-1} angulo previo
-y_n_2 = matriz_datos(3,:); % y_{n-2}
-u_n   = matriz_datos(4,:); % ángulo comandado a servo actual
+u_n   = matriz_datos(2,:); % ángulo comandado a servo actual
 
 Ts = 0.02; % muestreo de 50 Hz (20 ms)
-num_muestras = size(matriz_datos,2); % cantidad de filas (500)
+num_muestras = size(matriz_datos,2); % 500 muestras
 tiempo = (0:num_muestras - 1)' * Ts; 
 
-% 2. Visualización de los transitorios (Gráfica de verificación)
+% 2. Verificación adquisicion datos
 figure('Name', 'Validación de Transitorios - Segundo Orden', 'Color', 'w');
 plot(tiempo, y_n, 'LineWidth', 1.5, 'Color', 'r'); hold on;
-plot(tiempo, y_n_1, 'LineWidth', 1.5, 'Color', 'g'); 
-plot(tiempo, y_n_2, 'LineWidth', 1.5, 'Color', 'm'); 
 plot(tiempo, u_n, 'LineWidth', 1.5, 'Color', 'b'); 
 xlabel('Tiempo [s]');
 ylabel('Magnitud');
 title('Respuesta a escalón - Sistema de Segundo Orden');
-legend('y_n', 'y_{n-1}', 'y_{n-2}', 'u_n');
+legend('y_n', 'u_n');
 grid on;
 hold off;
 
 % 3. Resolución por Cuadrados Mínimos (Modelo de Segundo Orden)
 % Ecuación en diferencias: y_n = c_{y1}*y_{n-1} + c_{y2}*y_{n-2} + c_u*u_n  -->  Y = X * alpha
-Y = y_n(:);                
-X = [y_n_1(:), y_n_2(:), u_n(:)];               
+Y    = y_n(:, 3:end)'; % ignoro primeras dos muestras hasta n=0
+y_n1 = y_n(:, 2:end-1)'; % instante -1
+y_n2 = y_n(:, 1:end-2)';% instante -2
+u_n_recortado  = u_n(:, 3:end)'; 
+X = [y_n1, y_n2, u_n_recortado];               
 
 alpha = (X' * X) \ (X' * Y); % (X^T * X)^-1 * X^T * Y
 
@@ -54,7 +53,7 @@ disp(polos_discretos);
 fprintf('Polos continuos en S:\n');
 disp(polos_continuos);
 
-%======== Ahora sí, comparo planta ========
+%======== Comparo planta real con su transferencia ========
 s = tf('s');
 
 p1 = polos_continuos(1);
@@ -64,7 +63,7 @@ k_planta = (cu*p1*p2)/(1-cy1-cy2);
 Planta = k_planta/((s-p1)*(s-p2));
 sys = tf(Planta);
 
-[y_simulado, ~] = lsim(sys, u_n, tiempo);
+[y_simulado, ~] = lsim(sys, u_n, tiempo');
 
 figure('Name', 'Validación del Modelo Continuo Identificado', 'Color', 'w');
 plot(tiempo, y_n, 'LineWidth', 1.5, 'Color', 'r'); hold on;
@@ -81,10 +80,15 @@ hold off;
 % Ts = 0.02 --> omega_s = 314 rad/s
 % Ogata pg 171 respuesta de sistemas de segundo orden
 % la frecuencia de gain crossover es del mismo orden que la frecuencia natural
-k = db2mag(28.9);
-Controlador = (k*(s+11)^2)/(s*(s+200));
+rp1 = real(p1);
+ip1 = imag(p1);
+omega_natural = sqrt(rp1^2 + ip1^2);
+Controlador = ((s+11)^2)/(s*(s+200));
 L = sys*Controlador;
-figure;bode(L);
+%figure;bode(L);title('L antes deajustar k');
+k = db2mag(29.1); % ganancia en omega_natural=11
+L = L*k;
+figure;bode(L);title('L');
 
 C_z = c2d(Controlador, Ts, 'tustin');
 

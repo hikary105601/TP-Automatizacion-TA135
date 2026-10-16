@@ -27,19 +27,13 @@ void matlab_send_angles(float gyros, float accel, float filter){
   Serial.write(b, sizeof(float));
 }
 
-void matlab_send_regresion(float datos_regresion[], int cant_datos){
+void matlab_send(float* datos, int cant_datos){
   byte * b = NULL;
 
   Serial.write("abcd");
   for(int i=0; i<cant_datos; i++){
-    b = (byte *) &datos_regresion[i];
+    b = (byte *) &datos[i];
     Serial.write(b, sizeof(float));
   }
   
-}
-
-void matlab_send_sonar(float distancia){
-  Serial.write("abcd");
-  byte * b = (byte *) &distancia;
-  Serial.write(b, sizeof(float));
 }
