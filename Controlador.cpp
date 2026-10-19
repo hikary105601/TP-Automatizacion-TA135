@@ -6,7 +6,7 @@ float control_bilinear(float* e, float* u){ //entra error (e), sale servo (u)
 }
 
 float control_p(float* e){ // error de distancia en instante k
-  float k_p = 5.0;
+  float k_p = 5;
   return k_p * e[0];
 }
 

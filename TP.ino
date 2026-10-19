@@ -14,10 +14,10 @@ float gyro = 0.0;
 float accel = 0.0;
 
 unsigned long t_inicio_loop;    // Cuando inicia cada ciclo de tareas
-unsigned long t_loop_anterior;  // Última ejecución de tareas
 unsigned long t_actual;
 unsigned long t_envio;  // ciclo transferencia datos a simulink
 unsigned long t_servo;
+unsigned long t_sonar;
 static bool servo_up = true;
 
 NewPing sonar(PIN_TRIG, PIN_ECHO, DISTANCIA_MAX);
@@ -75,6 +75,7 @@ void setup() {
 
   servo.attach(PIN_SERVO, SERVO_MIN, SERVO_MAX);
   inicializar_servo(servo); // se pone la barra en horizontal
+  delay(10);
 
   filter_angle = 0.0;
   //gyro_angle = 0.0;
@@ -94,31 +95,41 @@ void setup() {
     datos_observador[i] = 0.0;
   }
 
+  t_envio = 0;  // ciclo transferencia datos a simulink
+  t_servo = 0;
+  t_sonar = 0;
   t_inicio_loop = micros();
-  t_loop_anterior = t_inicio_loop;
+  //t_loop_anterior = t_inicio_loop;
 }
 
 void loop() {
   t_actual = micros();
+
+  if(t_actual - t_sonar >= MICROS_SONAR){
+    t_sonar += MICROS_SONAR;
+    //distancia = distancia_cm(sonar);
+  }
+
   if (t_actual - t_inicio_loop >= MICROS_50HZ) {
     t_inicio_loop += MICROS_50HZ;
 
+    distancia = distancia_cm(sonar);
     mpu.getEvent(&a, &g, &temp);
-    //distancia = distancia_cm(sonar);
     filter_angle = get_angle_filter(a, g, filter_angle);
     datos_observador[velReal] = g.gyro.x;
 
+// implementar con cola circular
     e[2] = e[1];
     e[1] = e[0];
-    //e[0] = referencia_distancia - distancia;
-    e[0] = 0.0 - filter_angle;
+    e[0] = referencia_distancia - distancia;
+    //e[0] = 0.0 - filter_angle;
 
     u[2] = u[1];
     u[1] = u[0];
-    //u[0] = //control_pid(&derivativo_acumulado, &integral_acumulado, e);
-    u[0] = control_bilinear(e, u);
+    u[0] = control_p(e);
+    //u[0] = control_bilinear(e, u);
 
-    //servo_angulo(servo, u[0]);
+    servo_angulo(servo, u[0]);
 
     /*y_est = C_d[0]*datos_observador[angEst] + C_d[1]*datos_observador[velEst];
     for(int i=0; i < 2; i++){ //TODO: actualizar para usar vector datos
@@ -131,26 +142,28 @@ void loop() {
     datos_observador[velEst] = x_est[1];*/
   }
 
-
+/*
   if(t_actual - t_servo >= MICROS_SERVO){ // cuadrada servos
     t_servo += MICROS_SERVO;
     if(servo_up){
       servo_mid(servo);
-      datos_regresion[U0] = servo.read() - 91; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
+      datos_regresion[U0] = servo.read()-90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = false;
     }
     else{
       servo_max(servo);
-      datos_regresion[U0] = servo.read() - 91; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
+      datos_regresion[U0] = servo.read()-90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = true;
     } 
   }
+*/
 
   if (t_actual - t_envio >= MICROS_ENVIO) {
     t_envio += MICROS_ENVIO;
 
     datos_regresion[Y0] = filter_angle;
-    //matlab_send(datos_regresion, 2);
+    float aux_send[2] = {distancia,e[0]};
+    matlab_send(aux_send, 2);
 
     //matlab_send(datos_observador, 4);
   }

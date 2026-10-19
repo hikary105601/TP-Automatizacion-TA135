@@ -1,9 +1,9 @@
 close all;
-if ~isfile('identificacion.mat')
+if ~isfile('identificacion2.mat')
     error('No se encuentra el archivo datos_identificacion.mat. Obtenga datos de Simulink');
 end
 
-data = load('identificacion.mat');
+data = load('identificacion2.mat');
 matriz_datos = squeeze(data.out.Prueba{1}.Values.Data);
 
 y_n   = matriz_datos(1,:); % ángulo barra actual
@@ -61,7 +61,7 @@ p2 = polos_continuos(2);
 
 k_planta = (cu*p1*p2)/(1-cy1-cy2);
 Planta = k_planta/((s-p1)*(s-p2));
-sys = tf(Planta);
+sys = tf(Planta); % sistema servo-barra
 
 [y_simulado, ~] = lsim(sys, u_n, tiempo');
 
@@ -73,6 +73,25 @@ xlabel('Tiempo [s]');
 ylabel('Magnitud');
 title('Comparación: Sistema Real vs Modelo Identificado');
 legend('y_n (Real)', 'u_n (Entrada)', 'y_{simulado}', 'Location', 'Best');
+grid on;
+hold off;
+
+% == Planta Completa ==
+sys_completo = sys * (9.81/s^2); % agrego transferencia del carrito
+
+sys_pade = sys_completo*((1-0.04*s)/(1+0.04*s)); % agrego retardo
+
+[y_sin_retardo, ~] = lsim(sys_completo, u_n, tiempo');
+[y_pade, ~] = lsim(sys_pade, u_n, tiempo');
+
+figure('Name', 'Respuesta de sistema completo', 'Color', 'w');
+plot(tiempo, u_n, 'LineWidth', 1.5, 'Color', 'b'); hold on;
+plot(tiempo, y_sin_retardo, 'LineWidth', 1.5, 'Color', 'r');
+plot(tiempo, y_pade, '--', 'LineWidth', 1.8, 'Color', 'g');
+xlabel('Tiempo [s]');
+ylabel('Magnitud');
+title('Comparación: Sistema Completo vs Con Retardo');
+legend('u (entrada)','y sin retardo', 'y pade');
 grid on;
 hold off;
 

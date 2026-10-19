@@ -17,5 +17,6 @@
 
 #define MICROS_ENVIO 20000 // Matlab 0.02 seg
 #define MICROS_SERVO 2000000 // 2s
+#define MICROS_SONAR 20000 // modificar en caso de ruido por rebotes
 
 #endif

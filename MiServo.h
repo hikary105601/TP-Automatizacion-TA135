@@ -5,9 +5,9 @@
 
 /* us de PWM. Los valores min y max están limitados al rango de movimiento de la barra; 
 no corresponden a los valores extremos del servo motor (-90°, +90°)*/
-#define SERVO_MIN 1250 // Lado del servo. Baja mas en este sentido
-#define SERVO_MID 1535 
-#define SERVO_MAX 1790 // Lado sin  nada.
+#define SERVO_MIN 1270 // Lado del servo. Baja mas en este sentido
+#define SERVO_MID 1565 
+#define SERVO_MAX 1860 // Lado sin  nada.
 #define US_GRADO (2400.0-550.0)/180.0 // resolucion PWM
 
 void inicializar_servo(Servo &servo);
