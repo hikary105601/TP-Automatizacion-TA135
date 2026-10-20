@@ -118,7 +118,8 @@ void loop() {
   if(t_actual - t_servo >= MICROS_SERVO){ // cuadrada servos
     t_servo += MICROS_SERVO;
     if(servo_up){
-      servo_mid(servo);
+      servo_angulo(servo,-4.0);
+      //servo_mid(servo);
       //datos_regresion[U] = servo.read()-90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = false;
     }

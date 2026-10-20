@@ -1,12 +1,18 @@
 close all;
 
 % Traigo transferencia de la planta completa
-%           713.86
-%  ------------------------
-%  s^2 (s^2 + 18.29s + 116)
+%           72.768                        9.8
+%  ------------------------ . ----------------------------
+%    (s^2 + 18.29s + 116)     (s+0.692) (s+(19.42-157.1i))
+  
+  
 
 s = tf('s');
-P = 713.86/(s*(s^2 + 18.29*s + 116)*(s+20));
+Psb = (72.768)/(s^2 + 18.29*s + 116);
+Pbc = 9.8/((s+0.692)*(s+(19.42-157.1i)));
+Pbc_real = 9.8/((s+0.692)*(s+19.42));
+
+P = Psb*Pbc_real;
 
 if ~isfile('impulso_p.mat')
     error('No se encuentra el archivo impulso_p.mat. Obtenga datos de Simulink');
@@ -49,14 +55,14 @@ y_teorica = lsim(G_sim, u, tiempo);
 
 figure;
 % Datos experimentales
-plot(tiempo, e, 'b', 'LineWidth', 1.5, 'DisplayName', 'Error medido (e)'); hold on;
+plot(tiempo, e, 'b', 'LineWidth', 1.5, 'DisplayName', 'posición real'); hold on;
 
 % Respuesta teórica
-plot(tiempo, y_teorica, 'k--', 'LineWidth', 1.8, 'DisplayName', 'Rta. teórica');
+plot(tiempo, y_teorica, 'r', 'LineWidth', 1.8, 'DisplayName', 'posición teórica');
 
 xlabel('Tiempo [s]');
 ylabel('Magnitud');
-title('Comparación: Datos Muestreados vs. Respuesta Teórica al Impulso');
+title('Comparación: golpe al carrito e impulso');
 legend('Location', 'best');
 grid on;
 hold off;
