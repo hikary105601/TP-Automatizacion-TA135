@@ -6,7 +6,7 @@ close all;
 %  s^2 (s^2 + 18.29s + 116)
 
 s = tf('s');
-P = 713.86/(s*(s^2 + 18.29*s + 116)*(s+10));
+P = 713.86/(s*(s^2 + 18.29*s + 116)*(s+20));
 
 if ~isfile('impulso_p.mat')
     error('No se encuentra el archivo impulso_p.mat. Obtenga datos de Simulink');

@@ -123,7 +123,7 @@ void loop() {
       servo_up = false;
     }
     else{
-      servo_angulo(servo, 15.0);
+      servo_angulo(servo, 12.0);
       //servo_max(servo);
       //datos_regresion[U] = servo.read()-90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = true;
