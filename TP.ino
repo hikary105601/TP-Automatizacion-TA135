@@ -102,34 +102,37 @@ void loop() {
 
     posicion = referencia_distancia - distancia;
 
-// TODO: implementar con cola circular
-    //e[2] = e[1];
-    //e[1] = e[0];
-    //e[0] = 0.0 - filter_angle;
+// TODO: implementar error y control con cola circular
+    e[2] = e[1];
+    e[1] = e[0];
+    e[0] = posicion;
 
-    //u[2] = u[1];
-    //u[1] = u[0];
-    //u[0] = control_p(e);
+    u[2] = u[1];
+    u[1] = u[0];
+    u[0] = control_p(e);
     //u[0] = control_bilinear(e, u);
 
-    //servo_angulo(servo, u[0]);
+    servo_angulo(servo, u[0]);
   }
 
   if(t_actual - t_servo >= MICROS_SERVO){ // cuadrada servos
     t_servo += MICROS_SERVO;
     if(servo_up){
-      servo_angulo(servo,-4.0);
+      referencia_distancia = 16.0;
+      //servo_angulo(servo,-4.0);
       //servo_mid(servo);
       //datos_regresion[U] = servo.read()-90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = false;
     }
     else{
-      servo_angulo(servo, 12.0);
-      //servo_max(servo);
+      referencia_distancia = 6.0;
+      //servo_angulo(servo, 12.0);
+      //servo_mid(servo);
       //datos_regresion[U] = servo.read()-90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = true;
     } 
   }
+
 
 
   if (t_actual - t_envio >= MICROS_ENVIO) {
@@ -137,8 +140,10 @@ void loop() {
 
     datos_regresion[U] = filter_angle;
     datos_regresion[Y] = posicion;
-    //float aux_send[2] = {distancia,e[0]};
-    matlab_send(datos_regresion, 2);
+    //matlab_send(datos_regresion, 2);
+
+    float aux_send[3] = {posicion, referencia_distancia, u[0]};
+    matlab_send(aux_send, 3);
 
     //matlab_send(datos_observador, 4);
   }

@@ -138,9 +138,11 @@ disp(polos_continuos);
 % uno debería ser 0
  p1 = polos_continuos(1);
  p2 = polos_continuos(2);
+ p2 = 19.42;
  
- Pbc = 9.8/((s-p1)*(s-p2));
- Pbc = 9.8/((s+0.692)*(s+19.42));
+ k_planta = (cu*p1*p2)/(1-cy1-cy2);
+ Pbc = k_planta/((s-p1)*(s-p2));
+ Pbc = k_planta/((s+0.692)*(s+19.42));
  
 [y_simulado_bc, ~] = lsim(Pbc, u_bc, tiempo_bc');
 figure('Name', 'Validación del Modelo Continuo Identificado', 'Color', 'w');
