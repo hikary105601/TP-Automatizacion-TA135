@@ -104,7 +104,7 @@ grid on;
 hold off;
 
 % 3. Resolución por Cuadrados Mínimos
-% Ecuación en diferencias: y_k = y_{k-1}*c1 + y_{k-2}*c2 + u_{k-2}*cu
+% Ecuación en diferencias feed forward: y_k = y_{k-1}*c1 + y_{k-2}*c2 + u_{k-2}*cu
 Y    = y_bc(:, 3:end)'; % ignoro primeras dos muestras
 y_n1 = y_bc(:, 2:end-1)'; % instante -1
 y_n2 = y_bc(:, 1:end-2)';% instante -2

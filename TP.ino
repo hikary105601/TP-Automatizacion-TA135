@@ -109,7 +109,7 @@ void loop() {
 
     u[2] = u[1];
     u[1] = u[0];
-    u[0] = control_p(e);
+    u[0] = control_pd(&derivativo_acumulado, e);
     //u[0] = control_bilinear(e, u);
 
     servo_angulo(servo, u[0]);
@@ -125,7 +125,7 @@ void loop() {
       servo_up = false;
     }
     else{
-      referencia_distancia = 6.0;
+      //referencia_distancia = 6.0;
       //servo_angulo(servo, 12.0);
       //servo_mid(servo);
       //datos_regresion[U] = servo.read()-90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
@@ -142,8 +142,8 @@ void loop() {
     datos_regresion[Y] = posicion;
     //matlab_send(datos_regresion, 2);
 
-    float aux_send[3] = {posicion, referencia_distancia, u[0]};
-    matlab_send(aux_send, 3);
+    float aux_send[2] = {16.0-distancia, referencia_distancia}; //posicion, referencia_distancia, u[0]
+    matlab_send(aux_send, 2);
 
     //matlab_send(datos_observador, 4);
   }
