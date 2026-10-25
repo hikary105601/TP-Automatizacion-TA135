@@ -21,6 +21,7 @@ Adafruit_MPU6050 mpu;
 
 sensors_event_t a, g, temp;
 float filter_angle;
+float desvio_accel;
 
 enum variables_regresion { // regresion lineal procesada en Matlab
   Y, // y_n
@@ -59,9 +60,15 @@ void setup() {
 
   servo.attach(PIN_SERVO, SERVO_MIN, SERVO_MAX);
   inicializar_servo(servo); // se pone la barra en horizontal
-  delay(10);
+  delay(200);
 
   filter_angle = 0.0;
+  float suma_accel = 0.0;
+  for (int i = 0; i < 100; i++) { // calcula desvio para calibrar a 0°
+    mpu.getEvent(&a, &g, &temp);
+    suma_accel += get_angle_acceleration(a);
+  }
+  desvio_accel = suma_accel / 100;
   //gyro_angle = 0.0;
 
   for(int i=0; i<2; i++){
@@ -81,6 +88,7 @@ void setup() {
 
   t_envio = 0;  // ciclo transferencia datos a simulink
   t_servo = 0;
+
   t_inicio_loop = micros();
   //t_loop_anterior = t_inicio_loop;
 }
@@ -91,9 +99,9 @@ void loop() {
   if (t_actual - t_inicio_loop >= MICROS_50HZ) {
     t_inicio_loop += MICROS_50HZ;
 
-    distancia = distancia_cm(sonar);
     mpu.getEvent(&a, &g, &temp);
-    filter_angle = get_angle_filter(a, g, filter_angle);
+    filter_angle = get_angle_filter(a, g, filter_angle, desvio_accel);
+    distancia = distancia_cm(sonar);
     
     datos_observador[angReal] = filter_angle;
     datos_observador[velReal] = g.gyro.x;
@@ -112,22 +120,23 @@ void loop() {
     u[0] = control_pd(&derivativo_acumulado, e);
     //u[0] = control_bilinear(e, u);
 
-    servo_angulo(servo, u[0]);
+    //servo_angulo(servo, u[0]);
   }
 
   if(t_actual - t_servo >= MICROS_SERVO){ // cuadrada servos
     t_servo += MICROS_SERVO;
     if(servo_up){
-      referencia_distancia = 16.0;
-      //servo_angulo(servo,-4.0);
-      //servo_mid(servo);
+      //referencia_distancia = 16.0;
+      servo_mid(servo);
+      //filter_angle = 0.0;
       //datos_regresion[U] = servo.read()-90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = false;
     }
     else{
       //referencia_distancia = 6.0;
-      //servo_angulo(servo, 12.0);
-      //servo_mid(servo);
+      //servo_max(servo);
+      //filter_angle = 6.5;
+      servo_angulo(servo, 12.0);
       //datos_regresion[U] = servo.read()-90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = true;
     } 
@@ -140,10 +149,10 @@ void loop() {
 
     datos_regresion[U] = filter_angle;
     datos_regresion[Y] = posicion;
-    //matlab_send(datos_regresion, 2);
+    matlab_send(datos_regresion, 2);
 
-    float aux_send[2] = {16.0-distancia, referencia_distancia}; //posicion, referencia_distancia, u[0]
-    matlab_send(aux_send, 2);
+    //float aux_send[2] = {16.0-distancia, referencia_distancia}; //posicion, referencia_distancia, u[0]
+    //matlab_send(aux_send, 2);
 
     //matlab_send(datos_observador, 4);
   }

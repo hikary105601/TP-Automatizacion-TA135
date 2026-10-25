@@ -82,14 +82,17 @@ if ~isfile('barra-carrito.mat')
     error('No se encuentra el archivo barra-carrito.mat. Obtenga datos de Simulink');
 end
 
-data = load('barra-carrito.mat');
+data = load('test_bc.mat');
 matriz_datos = squeeze(data.out.Prueba{1}.Values.Data);
 
 y_bc = matriz_datos(1,:); % posición carrito (referencia-distancia)
 u_bc = matriz_datos(2,:); % ángulo barra
 
+y_bc = y_bc(1,200:end-135);
+u_bc = u_bc(1,200:end-135);
+
 Ts = 0.02; % muestreo de 50 Hz (20 ms)
-num_muestras_bc = size(matriz_datos,2); % 500 muestras
+num_muestras_bc = size(y_bc(:));
 tiempo_bc = (0:num_muestras_bc - 1)' * Ts; 
 
 % 2. Verificación adquisicion datos
@@ -113,15 +116,15 @@ X = [y_n1, y_n2, u_n2];
 
 alpha = (X' * X) \ (X' * Y); % (X^T * X)^-1 * X^T * Y
 
-cy1 = alpha(1); % 2-a
-cy2 = alpha(2); % a-1
-cu  = alpha(3); % g*T
+cy1 = alpha(1); 
+cy2 = alpha(2); 
+cu  = alpha(3); 
 
 % Los polos discretos son las raíces del polinomio característico: z^2 - cy1*z - cy2 = 0
 polos_discretos = roots([1, -cy1, -cy2]);
 
 % Conversión a tiempo continuo mediante s = ln(z) / Ts
-polos_continuos = log(polos_discretos) / Ts;
+polos_continuos = (polos_discretos-1)/Ts; %log(polos_discretos) / Ts;
 
 fprintf('Coeficientes estimados Pbc:\n');
 fprintf('cy1 = %.4f, cy2 = %.4f, cu = %.4f\n\n', cy1, cy2, cu);
@@ -138,11 +141,11 @@ disp(polos_continuos);
 % uno debería ser 0
  p1 = polos_continuos(1);
  p2 = polos_continuos(2);
- p2 = 19.42;
+ %p2 = 19.42;
  
  k_planta = (cu*p1*p2)/(1-cy1-cy2);
  Pbc = k_planta/((s-p1)*(s-p2));
- Pbc = k_planta/((s+0.692)*(s+19.42));
+ %Pbc = k_planta/((s+0.692)*(s+19.42));
  
 [y_simulado_bc, ~] = lsim(Pbc, u_bc, tiempo_bc');
 figure('Name', 'Validación del Modelo Continuo Identificado', 'Color', 'w');

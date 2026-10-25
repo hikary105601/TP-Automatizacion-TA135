@@ -19,10 +19,10 @@ if ~isfile('golpe_p.mat')
     error('No se encuentra el archivo golpe_p.mat. Obtenga datos de Simulink');
 end
 
-data = load('golpe_pd.mat');
+data = load('golpe_p.mat');
 matriz_datos = squeeze(data.out.Prueba{1}.Values.Data);
 
-p   = matriz_datos(1,:); % posicion (respecto equilibrio en 16cm)
+p   = matriz_datos(2,:); % posicion (respecto equilibrio en 16cm)
 
 num_muestras = size(matriz_datos,2);
 tiempo = (0:num_muestras - 1)' * Ts;
@@ -31,7 +31,7 @@ if ~isfile('golpe_p_sim.mat')
     error('No se encuentra el archivo golpe_p_sim.mat. Obtenga datos de Simulink');
 end
 
-data = load('golpe_pd_sim.mat');
+data = load('golpe_p_sim.mat');
 matriz_datos = squeeze(data.out.ScopeData{1}.Values.Data);
 
 p_sim = matriz_datos(:,1); % posicion (error respecto equilibrio)

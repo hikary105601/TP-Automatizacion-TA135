@@ -1,6 +1,6 @@
 #include "IMU.h"
 
-static float dt = MICROS_50HZ / MICROS_EN_SEG ; // diferencial de tiempo para el giroscopio
+static float dt = MICROS_50HZ / MICROS_EN_SEG; // diferencial de tiempo para el giroscopio
 
 float get_angle_gyro(sensors_event_t g, float last_approx){ //,
   
@@ -19,12 +19,11 @@ float get_angle_acceleration(sensors_event_t a){
   return angulo; // 0 si componentes hacia abajo
 }
 
-float get_angle_filter(sensors_event_t a, sensors_event_t g, float last_filter){
+float get_angle_filter(sensors_event_t a, sensors_event_t g, float last_filter, float desvio_a){
   float alpha = 0.05;
   
   float angle_gyros = get_angle_gyro(g, last_filter);
-  float angle_accel = get_angle_acceleration(a);
-  
+  float angle_accel = get_angle_acceleration(a) - desvio_a + 0.58;
   return (1 - alpha) * angle_gyros + alpha * angle_accel;
 }
 
