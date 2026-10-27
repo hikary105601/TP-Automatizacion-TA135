@@ -88,43 +88,50 @@ matriz_datos = squeeze(data.out.Prueba{1}.Values.Data);
 y_bc = matriz_datos(1,:); % posición carrito (referencia-distancia)
 u_bc = matriz_datos(2,:); % ángulo barra
 
-y_bc = y_bc(1,200:end-135);
-u_bc = u_bc(1,200:end-135);
+y_bc = y_bc(1,300:end-100);
+u_bc = u_bc(1,300:end-100);
 
 Ts = 0.02; % muestreo de 50 Hz (20 ms)
 num_muestras_bc = size(y_bc(:));
 tiempo_bc = (0:num_muestras_bc - 1)' * Ts; 
 
 % 2. Verificación adquisicion datos
-figure('Name', 'Validación datos', 'Color', 'w');
+figure('Name', 'Validación datos Pbc', 'Color', 'w');
 plot(tiempo_bc, y_bc, 'LineWidth', 1.5, 'Color', 'r'); hold on;
 plot(tiempo_bc, u_bc, 'LineWidth', 1.5, 'Color', 'b'); 
 xlabel('Tiempo [s]');
 ylabel('Magnitud');
-title('Respuesta a escalón');
+title('Respuesta a escalón Pbc');
 legend('posición', 'ang_{barra}');
 grid on;
 hold off;
 
 % 3. Resolución por Cuadrados Mínimos
-% Ecuación en diferencias feed forward: y_k = y_{k-1}*c1 + y_{k-2}*c2 + u_{k-2}*cu
+% Ecuación en diferencias forward difference
+%y_k = y_{k-1}*c1 + y_{k-2}*c2 + u_{k-2}*cu
 Y    = y_bc(:, 3:end)'; % ignoro primeras dos muestras
 y_n1 = y_bc(:, 2:end-1)'; % instante -1
 y_n2 = y_bc(:, 1:end-2)';% instante -2
-u_n2= u_bc(:, 1:end-2)'; 
-X = [y_n1, y_n2, u_n2];               
+u_n1 = u_bc(:, 1:end-2)';
+%u_n2 = u_bc(:, 1:end-2)';
+X = [y_n1, y_n2, u_n1];
 
 alpha = (X' * X) \ (X' * Y); % (X^T * X)^-1 * X^T * Y
 
-cy1 = alpha(1); 
-cy2 = alpha(2); 
-cu  = alpha(3); 
+cy1 = alpha(1); % 2-a
+cy2 = alpha(2); % a-1
+cu1 = alpha(3); % g*T
 
-% Los polos discretos son las raíces del polinomio característico: z^2 - cy1*z - cy2 = 0
-polos_discretos = roots([1, -cy1, -cy2]);
+% Los polos discretos son las raíces del polinomio característico: z^2 + cy1*z + cy2 = 0
+polos_discretos = roots([1, cy1, cy2]);
 
-% Conversión a tiempo continuo mediante s = ln(z) / Ts
-polos_continuos = (polos_discretos-1)/Ts; %log(polos_discretos) / Ts;
+%Forzamos z=1
+pd1=1;
+pd2=sqrt(cy2);
+polos_discretos=[pd1 pd2];
+
+% Conversión a tiempo continuo por forward difference
+polos_continuos = (polos_discretos-1)/Ts;
 
 fprintf('Coeficientes estimados Pbc:\n');
 fprintf('cy1 = %.4f, cy2 = %.4f, cu = %.4f\n\n', cy1, cy2, cu);
@@ -135,17 +142,14 @@ disp(polos_discretos);
 fprintf('Polos continuos en S Pbc:\n');
 disp(polos_continuos);
 
-%%======== Comparo planta real con su transferencia ========
- s = tf('s');
- 
-% uno debería ser 0
- p1 = polos_continuos(1);
- p2 = polos_continuos(2);
- %p2 = 19.42;
- 
- k_planta = (cu*p1*p2)/(1-cy1-cy2);
- Pbc = k_planta/((s-p1)*(s-p2));
- %Pbc = k_planta/((s+0.692)*(s+19.42));
+% %%======== Comparo planta real con su transferencia ========
+s = tf('s');
+
+p1 = polos_continuos(1);
+p2 = polos_continuos(2);
+
+k_continuo = (k)/(Ts);
+Pbc = k_continuo/((s-p1)*(s-p2));
  
 [y_simulado_bc, ~] = lsim(Pbc, u_bc, tiempo_bc');
 figure('Name', 'Validación del Modelo Continuo Identificado', 'Color', 'w');

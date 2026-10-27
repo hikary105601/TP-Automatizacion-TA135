@@ -9,10 +9,11 @@
 #include "Controlador.h"
 #include "Observador.h"
 
-unsigned long t_inicio_loop;    // Cuando inicia cada ciclo de tareas
+unsigned long t_inicio_loop;
 unsigned long t_actual;
 unsigned long t_envio;  // ciclo transferencia datos a simulink
 unsigned long t_servo;
+unsigned long t_sonar;
 static bool servo_up = true;
 
 NewPing sonar(PIN_TRIG, PIN_ECHO, DISTANCIA_MAX);
@@ -23,10 +24,7 @@ sensors_event_t a, g, temp;
 float filter_angle;
 float desvio_accel;
 
-enum variables_regresion { // regresion lineal procesada en Matlab
-  Y, // y_n
-  U // u_n
-};
+enum variables_regresion {Y, U};
 float datos_regresion[2]; // [y_n u_n]
 
 float referencia_distancia = 16.0;
@@ -34,8 +32,11 @@ float distancia;
 float posicion;
 float derivativo_acumulado;
 float integral_acumulado;
+#define CIRCULAR 3
 float e[3]; // error angulo barra [e_n e_{n-1} e_{n-2}]
+int e_index;
 float u[3]; // accion de control  [u_n u_{n-1} u_{n-2}]
+int u_index;
 
 float datos_observador[4]; 
 
@@ -69,7 +70,6 @@ void setup() {
     suma_accel += get_angle_acceleration(a);
   }
   desvio_accel = suma_accel / 100;
-  //gyro_angle = 0.0;
 
   for(int i=0; i<2; i++){
     datos_regresion[i] = 0.0;
@@ -77,10 +77,13 @@ void setup() {
 
   derivativo_acumulado = 0.0;
   integral_acumulado = 0.0;
-  for(int i=0; i<3; i++){
+
+  for(int i=0; i<CIRCULAR; i++){
     e[i] = 0.0;
     u[i] = 0.0;
   }
+  e_index = 0;
+  u_index = 0;
 
   for(int i=0; i<4; i++){
     datos_observador[i] = 0.0;
@@ -88,39 +91,38 @@ void setup() {
 
   t_envio = 0;  // ciclo transferencia datos a simulink
   t_servo = 0;
+  t_sonar = 0;
 
   t_inicio_loop = micros();
-  //t_loop_anterior = t_inicio_loop;
 }
 
 void loop() {
   t_actual = micros();
+
+  if (t_actual - t_sonar >= MICROS_SONAR) {
+    t_sonar += MICROS_SONAR;
+    distancia = distancia_cm(sonar);
+  }
 
   if (t_actual - t_inicio_loop >= MICROS_50HZ) {
     t_inicio_loop += MICROS_50HZ;
 
     mpu.getEvent(&a, &g, &temp);
     filter_angle = get_angle_filter(a, g, filter_angle, desvio_accel);
-    distancia = distancia_cm(sonar);
     
     datos_observador[angReal] = filter_angle;
     datos_observador[velReal] = g.gyro.x;
-    ///datos_observador[angEst] = ;
-    //datos_observador[velReal] =
+    actualizar_estimadas(datos_observador); // actualizar angReal antes!
 
     posicion = referencia_distancia - distancia;
 
-// TODO: implementar error y control con cola circular
-    e[2] = e[1];
-    e[1] = e[0];
-    e[0] = posicion;
+    e[e_index] = posicion;;
+    e_index = (e_index+1)%CIRCULAR;
 
-    u[2] = u[1];
-    u[1] = u[0];
-    u[0] = control_pd(&derivativo_acumulado, e);
-    //u[0] = control_bilinear(e, u);
+    u[u_index] = control_pd(&derivativo_acumulado, e);
+    u_index = (u_index+1)%CIRCULAR;
 
-    //servo_angulo(servo, u[0]);
+    //servo_angulo(servo, u[u_index]);
   }
 
   if(t_actual - t_servo >= MICROS_SERVO){ // cuadrada servos

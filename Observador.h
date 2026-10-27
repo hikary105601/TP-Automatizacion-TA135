@@ -8,6 +8,6 @@ enum variables_observador{
   velReal      // velocidad angular giroscopo
 };
 
-float* estimador_variables(float* datos_observador, float salida_real);
+void actualizar_estimadas(float* datos_observador);
 
 #endif

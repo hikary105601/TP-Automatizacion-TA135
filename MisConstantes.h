@@ -15,5 +15,6 @@
 
 #define MICROS_ENVIO 20000 // Matlab 0.02 seg
 #define MICROS_SERVO 5000000 // 2s
+#define MICROS_SONAR 20000 //
 
 #endif
