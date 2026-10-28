@@ -136,9 +136,9 @@ void loop() {
     }
     else{
       //referencia_distancia = 6.0;
-      //servo_max(servo);
+      servo_max(servo);
       //filter_angle = 6.5;
-      servo_angulo(servo, 12.0);
+      //servo_angulo(servo, 18.0);
       //datos_regresion[U] = servo.read()-90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = true;
     } 
