@@ -1,4 +1,7 @@
-#include "IMU.h"
+#include "Sensores.h"
+#include "MisConstantes.h"
+
+// ================= IMU =================
 
 static float dt = MICROS_50HZ / MICROS_EN_SEG; // diferencial de tiempo para el giroscopio
 
@@ -57,4 +60,29 @@ void print_IMU(sensors_event_t a, sensors_event_t g, sensors_event_t temp){
   
   Serial.println("");
   delay(1000);
+}
+
+// ================= SONAR =================
+float distancia_cm(NewPing &sonar){
+  unsigned int uS = sonar.ping(DISTANCIA_MAX);  // Tiempo de vuelo ida y vuelta
+  return (uS/2) / VEL_SONIDO;
+}
+
+unsigned long tiempo_lectura_sonar(NewPing &sonar){ // microsegundos
+  unsigned long antes_sonar = micros();
+  sonar.ping(DISTANCIA_MAX);
+  unsigned long despues_sonar = micros();
+  return despues_sonar - antes_sonar;
+}
+
+// ================= POTE =================
+float angulo_pote(int lectura_pote) {
+  return lectura_pote * (270.0 / 1023.0);
+}
+
+unsigned long tiempo_lectura_pote(){ // microsegundos
+  unsigned long antes_pote = micros();
+  int valor_pote = analogRead(PIN_POTE);
+  unsigned long despues_pote = micros();
+  return despues_pote - antes_pote;
 }

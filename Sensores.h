@@ -1,5 +1,7 @@
-#ifndef IMU_H
-#define IMU_H
+#ifndef Sensores_h
+#define Sensores_h
+
+// ================= iMU =================
 
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
@@ -13,5 +15,16 @@ float get_angle_filter(sensors_event_t a, sensors_event_t g, float last_filter, 
 unsigned long tiempo_lectura_imu(Adafruit_MPU6050 &mpu, sensors_event_t a, sensors_event_t g, sensors_event_t temp);
 
 void print_IMU(sensors_event_t a, sensors_event_t g, sensors_event_t temp);
+
+// ================= SONAR =================
+
+#include <NewPing.h>
+
+float distancia_cm(NewPing &sonar);
+unsigned long tiempo_lectura_sonar(NewPing &sonar);
+
+// ================= POTE =================
+
+float angulo_pote(int lectura_pote);
 
 #endif
