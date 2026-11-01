@@ -144,7 +144,8 @@ void loop() {
     //datos_regresion[U] = filter_angle;
     //datos_regresion[Y] = ;
     
-    matlab_send(&posicion,1);
+    float aux = 16.0 - distancia;
+    matlab_send(&aux,1);
 
     //matlab_send(datos_observador, 4);
   }
