@@ -45,9 +45,6 @@ polos_discretos = roots([1, -cy1, -cy2]);
 % Conversión a tiempo continuo mediante s = ln(z) / Ts
 polos_continuos = log(polos_discretos) / Ts;
 
-fprintf('Coeficientes estimados para Psb:\n');
-fprintf('cy1 = %.4f, cy2 = %.4f, cu = %.4f\n\n', cy1, cy2, cu);
-
 fprintf('Polos discretos en Z de Psb:\n');
 disp(polos_discretos);
 
@@ -106,20 +103,17 @@ legend('posición', 'ang_{barra}');
 grid on;
 hold off;
 
-% Convertir los datos a vectores columna double
 u = double(u_bc(:));
 y = double(y_bc(:));
 
 data = iddata(y, u, Ts);
-
 Pbc = tfest(data, 2, 0);
 
-% Mostrar los polos
 disp('Transferencia estimada:')
 Pbc
 
-disp('Polos continuios de Pbc:')
-polos_continuos = pole(Pbc)
+disp('Polos continuos de Pbc:')
+pole(Pbc)
 
 % %%======== Comparo planta real con su transferencia ========
 [y_simulado_bc, ~] = lsim(Pbc, u_bc, tiempo_bc');

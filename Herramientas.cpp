@@ -41,44 +41,41 @@ void matlab_send(float* datos, int cant_datos){
 }
 
 // ================= COLA CIRCULAR =================
-void cola_init(circular_t c){
-  for(int i=0; i<c.size; i++){
-    c.dato[i] = 0.0;
+void cola_init(circular_t* c){
+  for(int i=0; i<c->size; i++){
+    c->dato[i] = 0.0;
   }
-  c.newest_index = 0;
-  c.oldest_index = 0;
+  c->newest_index = 0;
+  c->cant = 0;
 }
 
 circular_t crear_cola(int cola_size){
   circular_t c;
   c.size = cola_size;
   c.dato = (float*) malloc(cola_size * sizeof(float));
-  cola_init(c);
+  cola_init(&c);
   return c;
 }
 
-bool cola_llena(circular_t c){
-  if((c.newest_index + 1)%c.size == c.oldest_index)
-    return true;
-  else
-    return false;
-}
-
 void encolar(float dato, circular_t* cola){
-  cola->dato[cola->newest_index] = dato;
-  cola->newest_index = (cola->newest_index+1)%cola->size;
-  if(cola_llena(*cola))
-    cola->oldest_index = (cola->oldest_index+1)%cola->size;
-}
+  if(cola->size <= 0)
+    return;
 
-float dato_reciente(circular_t c){ // último dato encolado
-  return c.dato[c.newest_index];
+  cola->dato[cola->newest_index] = dato;
+  cola->newest_index++;
+  if(cola->newest_index == cola->size)
+    cola->newest_index = 0;
+  if(cola->cant < cola->size)
+    cola->cant++;
 }
 
 float dato_n(circular_t c, int n){ // dato n posiciones atrás
-  if(n >= c.size) // datos más antiguos que la cantidad guardada
-    return c.dato[c.oldest_index];
+  if(n < 0 || n > c.cant) // datos más antiguos que la cantidad guardada
+    return 0.0;
   
-  int aux = (c.newest_index-n + c.size)%c.size; //sumar size asegura que no haya números negativos
-  return c.dato[aux];
+  int index = c.newest_index - 1 - n;
+  if(index < 0)
+    index += c.size;
+
+  return c.dato[index];
 } 

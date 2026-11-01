@@ -16,13 +16,12 @@ struct circular_t{
   float* dato;
   int size;
   int newest_index; 
-  int oldest_index; 
+  int cant;
 };
 
 circular_t crear_cola(int cola_size);
-void cola_init(circular_t c);
+void cola_init(circular_t* c);
 void encolar(float dato, circular_t* cola);
-float dato_reciente(circular_t c);
 float dato_n(circular_t c, int n); // dato n posiciones atrás
 
 #endif

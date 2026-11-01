@@ -1,86 +1,58 @@
 close all;
+% Este archivo solo grafica en una misma figura las mediciones guardadas en .mat
 
-% Traigo transferencia de la planta completa
+% Transferencia de la planta completa
 %           72.768               -16.82
 %  ------------------------ . -------------
 %    (s^2 + 18.29s + 116)      s (s+2.572)
 
 
-  
-s = tf('s');
-Psb = (72.768)/(s^2 + 18.29*s + 116);
-Pbc = -16.82/(s*(s+2.572));
-
-P = Psb*Pbc; % Copiar transferencia y simular en Simuink
-
-Kp = 5.0;
 Ts = 0.02;
 
-% Cargo datos de muestreo
-if ~isfile('golpe_p.mat')
-    error('No se encuentra el archivo golpe_p.mat. Obtenga datos de Simulink');
-end
+% Respuesta al impulso
+data1 = load('impulse_pi.mat');
+matriz_datos1 = squeeze(data1.out.Prueba{1}.Values.Data);
 
-data = load('golpe_p.mat');
-matriz_datos = squeeze(data.out.Prueba{1}.Values.Data);
+p1   = matriz_datos1(:,1); % posicion real
 
-p   = matriz_datos(2,:); % posicion (respecto equilibrio en 16cm)
+num_muestras1 = size(matriz_datos1,1);
+tiempo1 = (0:num_muestras1 - 1)' * Ts;
 
-num_muestras = size(matriz_datos,2);
-tiempo = (0:num_muestras - 1)' * Ts;
+data1 = load('impulse_p_sim.mat');
+matriz_datos1 = squeeze(data1.out.ScopeData{1}.Values.Data);
 
-if ~isfile('golpe_p_sim.mat')
-    error('No se encuentra el archivo golpe_p_sim.mat. Obtenga datos de Simulink');
-end
+p_sim1 = matriz_datos1(:,1); % posicion simulación
 
-data = load('golpe_p_sim.mat');
-matriz_datos = squeeze(data.out.ScopeData{1}.Values.Data);
-
-p_sim = matriz_datos(:,1); % posicion (error respecto equilibrio)
-
-% Verificación adquisicion datos
 figure;
-plot(tiempo, p, 'LineWidth', 1.5, 'Color', 'r'); hold on;
-plot(tiempo, p_sim, 'LineWidth', 1.5, 'Color', 'b');
+plot(tiempo1, p1, 'LineWidth', 1.5, 'Color', 'r'); hold on;
+plot(tiempo1, p_sim1, 'LineWidth', 1.5, 'Color', 'b');
 xlabel('Tiempo [s]');
 ylabel('Magnitud');
-title('Controlador PD - Impulso');
+title('Controlador P - Impulso');
 legend('real','simulada');
 grid on;
 hold off;
 
-
-
 %% Escalón de ref (posición)
-if ~isfile('escalon_p.mat')
-    error('No se encuentra el archivo escalon_p.mat. Obtenga datos de Simulink');
-end
+data2 = load('step_p.mat');
+matriz_datos2 = squeeze(data2.out.Prueba{1}.Values.Data);
 
-data = load('escalon_pd.mat');
-matriz_datos = squeeze(data.out.Prueba{1}.Values.Data);
+p2   = matriz_datos2(:,1); % posicion real
 
-p   = matriz_datos(1,:); % posicion (error respecto equilibrio)
-r   = matriz_datos(2,:); % referencia
+num_muestras2 = size(matriz_datos2,1);
+tiempo2 = (0:num_muestras2 - 1)' * Ts; 
 
-num_muestras = size(matriz_datos,2);
-tiempo = (0:num_muestras - 1)' * Ts; 
+data2 = load('step_p_sim.mat');
+matriz_datos2 = squeeze(data2.out.ScopeData{1}.Values.Data);
 
-if ~isfile('escalon_p_sim.mat')
-    error('No se encuentra el archivo escalon_p_sim.mat. Obtenga datos de Simulink');
-end
+p_sim2   = matriz_datos2(1:end,1); % posicion simulación
 
-data = load('escalon_pd_sim.mat');
-matriz_datos = squeeze(data.out.ScopeData{1}.Values.Data);
-
-p_sim   = matriz_datos(:,1); % posicion (error respecto equilibrio)
-
-% 2. Verificación adquisicion datos
 figure;
-plot(tiempo, p, 'LineWidth', 1.5, 'Color', 'r'); hold on;
-plot(tiempo, p_sim, 'LineWidth', 1.5, 'Color', 'b'); 
+plot(tiempo1, p1, 'LineWidth', 1.5, 'Color', 'r'); hold on;
+plot(tiempo1, p_sim1, 'LineWidth', 1.5, 'Color', 'b'); 
 xlabel('Tiempo [s]');
 ylabel('Magnitud');
-title('Controlador PD - Escalón');
+title('Controlador P - Escalón');
 legend('real', 'simulada');
 grid on;
 hold off;

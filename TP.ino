@@ -25,7 +25,8 @@ float desvio_accel;
 enum variables_regresion {Y, U};
 float datos_regresion[2]; // [y_n u_n]
 
-float referencia = 16.0;
+float referencia_d = 16.0;
+float referencia_p = 0.0;
 float distancia;
 float posicion;
 float derivativo_acumulado;
@@ -74,8 +75,8 @@ void setup() {
   derivativo_acumulado = 0.0;
   integral_acumulado = 0.0;
   
-  cola_init(e);
-  cola_init(u);
+  cola_init(&e);
+  cola_init(&u);
 
   for(int i=0; i<4; i++){
     datos_observador[i] = 0.0;
@@ -106,49 +107,44 @@ void loop() {
     //datos_observador[velReal] = g.gyro.x;
     //actualizar_estimadas(datos_observador); // actualizar angReal antes!
 
-    posicion = referencia - distancia;
-    encolar(posicion, &e);
-    float control = control_p(dato_reciente(e));
+    posicion = referencia_d - distancia;
+    float error_pos = referencia_p - posicion;
+    encolar(error_pos, &e);
+    float e0 = dato_n(e,0);
+    float e1 = dato_n(e,1);
+    float control = control_pd(&derivativo_acumulado,e0,e1);
+    
     encolar(control, &u);
 
-
-    //servo_angulo(servo, u[u_index]);
+    servo_angulo(servo, dato_n(u,0));
   }
 
   if(t_actual - t_servo >= MICROS_SERVO){ // cuadrada servos
     t_servo += MICROS_SERVO;
     if(servo_up){
-      //referencia_distancia = 16.0;
-      //servo_min(servo);
-      servo_angulo(servo, -1.0);
-      Serial.println(servo.read()-90);
-      //filter_angle = 0.0;
+      //referencia_p = 0.0;
+      //servo_mid(servo);
+      //servo_angulo(servo, -10.0);
       //datos_regresion[U] = servo.read()-90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = false;
     }
     else{
-      //referencia_distancia = 6.0;
+      //referencia_p = 10.0;
       //servo_max(servo);
-      servo_angulo(servo, 2.0);
-      Serial.println(servo.read()-90);
-      //filter_angle = 6.5;
-      //servo_angulo(servo, 18.0);
+      //servo_angulo(servo, 10.0);
       //datos_regresion[U] = servo.read()-90; // read devuelve el último ángulo entre 0 y 180. Resto 90 para centrar en 0
       servo_up = true;
     } 
   }
 
 
-
   if (t_actual - t_envio >= MICROS_ENVIO) {
     t_envio += MICROS_ENVIO;
 
-    datos_regresion[U] = filter_angle;
-    datos_regresion[Y] = posicion;
-    //matlab_send(&posicion, 1);
-
-    float aux_send[2] = {16.0-distancia, referencia}; //posicion, referencia_distancia, u[0]
-    //matlab_send(aux_send, 2);
+    //datos_regresion[U] = filter_angle;
+    //datos_regresion[Y] = ;
+    
+    matlab_send(&posicion,1);
 
     //matlab_send(datos_observador, 4);
   }
